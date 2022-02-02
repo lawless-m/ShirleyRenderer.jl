@@ -25,9 +25,9 @@ end
 
 function trace(sphere::Sphere, ray::Ray, t_min, t_max)
 	oc = ray.origin - sphere.center
-	a = magnitude(ray.direction)^2
+	a = magnitudesq(ray.direction)
 	half_b = dot(oc, ray.direction)
-	c = magnitude(oc)^2 - sphere.radius^2
+	c = magnitudesq(oc) - sphere.radius^2
 	discriminant = half_b^2 - a*c
 	if discriminant < 0
 		return -1

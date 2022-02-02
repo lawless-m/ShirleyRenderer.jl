@@ -19,12 +19,16 @@ magnitude(x,y) = sqrt(x^2 + y^2)
 magnitude(x,y,z) = sqrt(x^2 + y^2 + z^2)
 magnitude(v) = magnitude(v...)
 
+magnitudesq(x,y) = (x^2 + y^2)
+magnitudesq(x,y,z) = (x^2 + y^2 + z^2)
+magnitudesq(v) = magnitudesq(v...)
+
 randf(fmin, fmax) = fmin + (fmax-fmin)*rand()
 near_zero(v) = v.x < 1e-8 && v.y < 1e-8 && v.z < 1e-8
 
 function random_in_unit_disk() 
 	x,y = randf(-1, 1), randf(-1, 1)
-	while magnitude(x,y)^2 >= 1
+	while magnitudesq(x,y) >= 1
      	x,y = randf(-1, 1), randf(-1, 1)
 	end
 	x,y
@@ -32,7 +36,7 @@ end
 
 function random_in_unit_sphere() 
 	x,y,z = randf(-1,1), randf(-1,1), randf(-1,1)
-	while magnitude(x,y,z)^2 >= 1
+	while magnitudesq(x,y,z) >= 1
 		x,y,z = randf(-1,1), randf(-1,1), randf(-1,1)
 	end
 	Point3(x,y,z)
@@ -48,7 +52,7 @@ end
 function refract(uv, n, etai_over_etat) 
     cos_theta = min(dot(-uv, n), 1.0)
     r_out_perp = etai_over_etat * (uv + cos_theta*n)
-    r_out_parallel = -sqrt(abs(1.0 - magnitude(r_out_perp)^2)) * n
+    r_out_parallel = -sqrt(abs(1.0 - magnitudesq(r_out_perp))) * n
     r_out_perp + r_out_parallel
 end
 
