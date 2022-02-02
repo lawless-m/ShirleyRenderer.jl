@@ -3,6 +3,7 @@ module ShirleyRayTracer
 
 using StaticArrays
 using LinearAlgebra
+using Images
 
 const Vec3 = SVector{3, Float64}
 const Point3 = SVector{3, Float64}
@@ -161,24 +162,27 @@ function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float
 	t1m + 0.5t, t1m + 0.7t, t1m + t
 end
 
-function trace_scanline(world, y, nsamples, width, height, max_depth)
-	scanline = Scanline(undef, width)
-	@simd for x in 1:width
+rgb(r, g, b) = RGB(clamp(sqrt(r), 0, 1), clamp(sqrt(g), 0, 1), clamp(sqrt(b), 0, 1))
+
+function trace_scancol(world, x, nsamples, width, height, max_depth)
+	scancol = Vector{RGB}(undef, height)
+	rgb 
+	@simd for y in 1:height
 		r=g=b=0.0
 		for _ in 1:nsamples
 			(r,g,b) = (r,g,b) .+ ray_color(world, get_ray(world, (x + rand()) / width, (y + rand()) / height), max_depth)
 		end
-		@inbounds scanline[x] = Color(r/nsamples, g/nsamples, b/nsamples)
+		@inbounds scancol[height-y+1] = rgb(r/nsamples, g/nsamples, b/nsamples)
 	end
-	scanline
+	scancol
 end
 
 function render(scene::Scene, width, height, nsamples=10, max_depth=50)
-	scanlines = Vector{Scanline}(undef, height)
-	Threads.@threads for y in 1:height
-		@inbounds scanlines[y] = trace_scanline(scene, y, nsamples, width, height, max_depth)
-    end
-	scanlines
+	image = Array{RGB, 2}(undef, height, width)
+	Threads.@threads for x in 1:width
+		@inbounds image[:, x] = trace_scancol(scene, x, nsamples, width, height, max_depth)
+	end
+	image
 end
 
 
