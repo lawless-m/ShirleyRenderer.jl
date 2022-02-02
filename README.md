@@ -1,2 +1,1 @@
-# ShirleyRenderer.jl
-Shirley Ray Racing
+# ShirleyRayTracer
