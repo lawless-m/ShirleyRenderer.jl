@@ -2,15 +2,13 @@
 export Lambertian, Metal, Dielectric, DiffuseLight, Isotropic
 
 reflect(v, n) =  v - 2dot(v,n)*n
-
-emitted(m::Material, ray::Ray, hit::Hit) = Color(0,0,0)
+emitted(m::Material, u::Float64, v::Float64, p::Point3) = Color(0,0,0)
 scatter(m::Material, ray::Ray, hit::Hit) = Ray(), zero(Color)
 
 struct Lambertian <: Material
-	albedo::Color
-	Lambertian(c::Color) = new(c)
-	Lambertian(r,g,b) = new(Color(r,g,b))
-	Lambertian() = Lambertian(Color(rand()*rand(), rand()*rand(), rand()*rand()))
+	albedo::Texture
+	Lambertian(t::Texture) = new(t)
+	Lambertian(c::Color) = Lambertian(SolidColor(c))
 end
 
 function scatter(l::Lambertian, ray::Ray, hit::Hit)
@@ -18,7 +16,7 @@ function scatter(l::Lambertian, ray::Ray, hit::Hit)
 	if near_zero(scatter_direction)
 		scatter_direction = hit.normal
 	end
-	Ray(hit.p, scatter_direction), l.albedo
+	Ray(hit.p, scatter_direction), value(l.albedo, hit.u, hit.v, hit.p)
 end
 
 struct Metal <: Material
@@ -73,7 +71,7 @@ struct Isotropic <: Material
 	Isotropic(c::Color) = Isotropic(ColorTexture(c))
 end
 
-function scatter(i::Isotripc, ray::Ray, hit::Hit)
+function scatter(i::Isotropic, ray::Ray, hit::Hit)
 	scattered = Ray(hit.p, random_in_unit_sphere(), ray.time);
     attenuation = value(i.albedo, hit.u, hit.v, hit.p);
 end

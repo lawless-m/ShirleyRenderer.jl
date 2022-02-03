@@ -9,7 +9,7 @@ const Vec3 = SVector{3, Float64}
 const Point3 = SVector{3, Float64}
 const Color = RGB{Float64}
 
-export Scene, Camera, Point3, Vec3
+export Scene, Camera, Point3, Vec3, Color, Hitable, Hit
 export trace_scanline, render
 export magnitude, add!, randf
 
@@ -101,18 +101,23 @@ struct Hit
 	normal::Vec3
 	t::Float64
 	front_face::Bool
+	u::Float64
+	v::Float64
 end
 
 abstract type Material end
 abstract type Hitable end
+abstract type Texture end
 
 include("Hitables.jl")
+include("Textures.jl")
 include("Materials.jl")
 
 struct Scene
 	camera::Camera
 	hitables::Vector{Hitable}
-	Scene(cam) = new(cam, Vector{Hitable}())
+	background::Color
+	Scene(cam, color) = new(cam, Vector{Hitable}(), color)
 end
 
 add!(s::Scene, h::Hitable) = push!(s.hitables, h)
@@ -156,7 +161,7 @@ function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float
 	
 	obj = scene.hitables[struck]
 	ht = hit(obj, t, ray)
-	emit = obj.material(ht.u, ht.v, ht.p)
+	emit = emitted(obj.material, ht.u, ht.v, ht.p)
 	s, a = scatter(obj.material, ray, ht)
 	if s.origin.x == Inf
 		return emit.r, emit.g, emit.b
