@@ -58,7 +58,7 @@ struct Ray
 	origin::Point3
 	direction::Vec3
 	udirection::Vec3
-	tm::Float64
+	time::Float64
 	Ray(o, d, m) = new(o, d, normalize(d), m)
 	Ray(o, d) = Ray(o, d, 0)
 	Ray() = new(Vec3(Inf, Inf, Inf), Vec3(Inf, Inf, Inf)) # a type stable sentinel instead of using nothing
@@ -146,18 +146,23 @@ function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float
 
 	struck, t = trace(scene, ray, 0.001, Inf)
 	if struck == 0
+		return scene.background.r, scene.background.g, scene.background.b
+		#== week 1
 		t = 0.5*(ray.udirection.y + 1.0)
 		t1m = 1.0 - t
 		return t1m + 0.5t, t1m + 0.7t, t1m + t
+		==#
 	end
 	
 	obj = scene.hitables[struck]
-	s, a = scatter(obj.material, ray, hit(obj, t, ray))
+	ht = hit(obj, t, ray)
+	emit = obj.material(ht.u, ht.v, ht.p)
+	s, a = scatter(obj.material, ray, ht)
 	if s.origin.x == Inf
-		return 0,0,0
+		return emit.r, emit.g, emit.b
 	end
 	r,g,b = ray_color(scene, s, depth-1)
-	a.r * r, a.g * g, a.b * b
+	emit.r + a.r * r, emit.g + a.g * g, emit.b + a.b * b
 end
 
 rgb(r, g, b) = RGB(clamp(sqrt(r), 0, 1), clamp(sqrt(g), 0, 1), clamp(sqrt(b), 0, 1))

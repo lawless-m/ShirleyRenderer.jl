@@ -1,7 +1,10 @@
 
-export Lambertian, Metal, Dielectric
+export Lambertian, Metal, Dielectric, DiffuseLight, Isotropic
 
 reflect(v, n) =  v - 2dot(v,n)*n
+
+emitted(m::Material, ray::Ray, hit::Hit) = Color(0,0,0)
+scatter(m::Material, ray::Ray, hit::Hit) = Ray(), zero(Color)
 
 struct Lambertian <: Material
 	albedo::Color
@@ -55,3 +58,23 @@ function scatter(d::Dielectric, ray::Ray, hit::Hit)
 
 	Ray(hit.p, direction), Color(1,1,1)
 end
+
+struct DiffuseLight <: Material
+	emit::Texture
+	DiffuseLight(t::Texture) = new(t)
+	DiffuseLight(c::Color) = DiffuseLight(ColorTexture(c))
+end
+
+emitted(e::DiffuseLight, u::Float64, v::Float64, p::Point3) = value(d.emit, u, v, p)
+
+struct Isotropic <: Material
+	albedo::Texture
+	Isotropic(t::Texture) = new(t)
+	Isotropic(c::Color) = Isotropic(ColorTexture(c))
+end
+
+function scatter(i::Isotripc, ray::Ray, hit::Hit)
+	scattered = Ray(hit.p, random_in_unit_sphere(), ray.time);
+    attenuation = value(i.albedo, hit.u, hit.v, hit.p);
+end
+
