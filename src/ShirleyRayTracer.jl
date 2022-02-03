@@ -7,12 +7,9 @@ using Images
 
 const Vec3 = SVector{3, Float64}
 const Point3 = SVector{3, Float64}
-const Color = SVector{3, Float64}
-const Scanline = Vector{Color}
+const Color = RGB{Float64}
 
-include("PPM.jl")
-
-export Scene, Camera, Point3, Vec3, Color, Scanline
+export Scene, Camera, Point3, Vec3
 export trace_scanline, render
 export magnitude, add!, randf
 
@@ -154,7 +151,7 @@ function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float
 			return 0,0,0
 		end
 		r,g,b = ray_color(scene, s, depth-1)
-		return a[1] * r, a[2] * g, a[3] * b
+		return a.r * r, a.g * g, a.b * b
 	end
 
 	t::Float64 = 0.5*(ray.udirection.y + 1.0)

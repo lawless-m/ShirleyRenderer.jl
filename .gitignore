@@ -23,6 +23,6 @@ docs/site/
 # environment.
 Manifest.toml
 *.ppm
+*.jpg
 src/*.ppm
-
-
+src/*.jpg
