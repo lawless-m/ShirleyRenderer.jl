@@ -27,7 +27,7 @@ end
 
 function scatter(m::Metal, ray::Ray, hit::Hit)
 	reflected = reflect(ray.udirection, hit.normal)
-        scattered = Ray(hit.p, reflected + m.fuzz * random_in_unit_sphere())
+    scattered = Ray(hit.p, reflected + m.fuzz * random_in_unit_sphere())
 	dot(scattered.direction, hit.normal) > 0 ? (scattered, m.albedo) : (Ray(), zero(Color))
 end
 
