@@ -10,12 +10,13 @@ struct Lambertian <: Material
 	Lambertian() = Lambertian(Color(rand()*rand(), rand()*rand(), rand()*rand()))
 end
 
-function scatter(l::Lambertian, ray::Ray, hit::Hit)
+function scatter(l::Lambertian, scene)
 	scatter_direction = hit.normal + random_unit_vector()
 	if near_zero(scatter_direction)
 		scatter_direction = hit.normal
 	end
-	Ray(hit.p, scatter_direction), l.albedo
+	set_ray(scene, hit.p, scatter_direction)
+	l.albedo
 end
 
 struct Metal <: Material
@@ -25,17 +26,22 @@ struct Metal <: Material
 	Metal(r,g,b,f) = Metal(Color(r,g,b), f)
 end
 
-function scatter(m::Metal, ray::Ray, hit::Hit)
+function scatter(m::Metal, scene)
+	ray = get_ray(scene)
+	hit = get_hit(scene)
+	
 	reflected = reflect(ray.udirection, hit.normal)
-    scattered = Ray(hit.p, reflected + m.fuzz * random_in_unit_sphere())
-	dot(scattered.direction, hit.normal) > 0 ? (scattered, m.albedo) : (Ray(), zero(Color))
+	scattered = set_ray(scene, hit.p, reflected + m.fuzz * random_in_unit_sphere(), hit.t)
+	dot(scattered.direction, hit.normal) > 0 ? m.albedo : Color(-Inf, -Inf, -Inf)
 end
 
 struct Dielectric <: Material
 	ir::Float64
 end
 
-function scatter(d::Dielectric, ray::Ray, hit::Hit) 
+function scatter(d::Dielectric, scene)
+	ray = get_ray(scene)
+	hit = get_hit(scene)
 
 	function reflectance(cosine, ratio)
 		r = ((1-ratio) / (1+ratio))^2
@@ -53,5 +59,6 @@ function scatter(d::Dielectric, ray::Ray, hit::Hit)
 			refract(ray.udirection, hit.normal, refraction_ratio)
 		end
 
-	Ray(hit.p, direction), Color(1,1,1)
+	set_ray(scene, hit.p, direction)
+	Color(1,1,1)
 end

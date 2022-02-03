@@ -54,14 +54,14 @@ function refract(uv, n, etai_over_etat)
     r_out_perp + r_out_parallel
 end
 
-struct Ray
+mutable struct Ray
 	origin::Point3
 	direction::Vec3
 	udirection::Vec3
-	tm::Float64
+	time::Float64
 	Ray(o, d, m) = new(o, d, normalize(d), m)
 	Ray(o, d) = Ray(o, d, 0)
-	Ray() = new(Vec3(Inf, Inf, Inf), Vec3(Inf, Inf, Inf)) # a type stable sentinel instead of using nothing
+	Ray() = Ray(zero(Point3), zero(Vec3))
 end
 
 at(r::Ray, t) = r.origin + t * r.direction
@@ -96,11 +96,12 @@ struct Camera
 	Camera() = Camera(Point3(0,0,-1), Point3(0,0,0), Vec3(0,1,0), 40, 1, 0, 10)
 end
 
-struct Hit 
+mutable struct Hit 
 	p::Point3
 	normal::Vec3
 	t::Float64
 	front_face::Bool
+	Hit() = new(zero(Point3), zero(Vec3), 0, false)
 end
 
 abstract type Material end
@@ -112,23 +113,48 @@ include("Materials.jl")
 struct Scene
 	camera::Camera
 	hitables::Vector{Hitable}
-	Scene(cam) = new(cam, Vector{Hitable}())
+	rays::Vector{Ray}
+	hits::Vector{Hit}
+	Scene(cam) = new(cam, Vector{Hitable}(), [Ray() for _ in 1:Threads.nthreads()], [Hit() for _ in 1:Threads.nthreads()])
 end
 
 add!(s::Scene, h::Hitable) = push!(s.hitables, h)
 
-get_ray(scene::Scene, s, t) = get_ray(scene.camera, s, t)
-
-function get_ray(cam::Camera, s, t)
-	x, y = cam.lens_radius .* random_in_unit_disk()
-	offset = cam.u * x + cam.v * y
-	Ray(cam.origin + offset, cam.lower_left_corner + s * cam.horizontal + t * cam.vertical - cam.origin - offset, randf(cam.time0, cam.time1))
+function set_ray(scene::Scene, origin::Point3, direction::Vec3, time::Float64)
+	id = Threads.threadid()
+	scene.rays[id].origin = origin
+	scene.rays[id].direction = direction
+	scene.rays[id].udirection = normalize(direction)
+	scene.rays[id].time = time
+	scene.rays[id]
 end
 
-function trace(scene::Scene, ray::Ray, t_min::Float64, t_max::Float64)
+get_ray(scene::Scene) = scene.rays[Threads.threadid()]
+
+function set_ray(scene::Scene, s::Float64, t::Float64)
+	cam = scene.camera
+	x, y = cam.lens_radius .* random_in_unit_disk()
+	offset = cam.u * x + cam.v * y
+	origin = cam.origin + offset
+	direction = cam.lower_left_corner + s * cam.horizontal + t * cam.vertical - cam.origin - offset 
+	set_ray(scene, origin, direction, randf(cam.time0, cam.time1))
+end
+
+get_hit(scene::Scene) = scene.hits[Threads.threadid()]
+function set_hit(scene::Scene, p, normal, t, front_face) 
+	id = Threads.threadid()
+	scene.hits[id].p = p
+	scene.hits[id].normal = normal
+	scene.hits[id].t = t
+	scene.hits[id].front_face = front_face
+	scene.hits[id]
+end
+	
+
+function trace(scene::Scene, t_min::Float64, t_max::Float64)
 	closest_t = Inf
 	struck = 0
-	
+	ray = get_ray(scene)
 	for i in 1:length(scene.hitables)
 		t = trace(scene.hitables[i], ray, t_min, closest_t)
 		if t >= 0
@@ -139,35 +165,38 @@ function trace(scene::Scene, ray::Ray, t_min::Float64, t_max::Float64)
 	struck, closest_t
 end
 
-function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float64}
+function ray_color(scene::Scene, depth)::Tuple{Float64, Float64, Float64}
 	if depth <= 0 
         	return 0,0,0
 	end
 
-	struck, t = trace(scene, ray, 0.001, Inf)
+	struck, t = trace(scene, 0.001, Inf)
 	if struck == 0
-		t = 0.5*(ray.udirection.y + 1.0)
+		t = 0.5*(get_ray(scene).udirection.y + 1.0)
 		t1m = 1.0 - t
 		return t1m + 0.5t, t1m + 0.7t, t1m + t
 	end
-	
+
 	obj = scene.hitables[struck]
-	s, a = scatter(obj.material, ray, hit(obj, t, ray))
-	if s.origin.x == Inf
+	set_hit(scene, obj, t)
+	a = scatter(obj.material, scene)
+	if a.r == -Inf
 		return 0,0,0
 	end
-	r,g,b = ray_color(scene, s, depth-1)
+	r,g,b = ray_color(scene, depth-1)
 	a.r * r, a.g * g, a.b * b
 end
 
-rgb(r, g, b) = RGB(clamp(sqrt(r), 0, 1), clamp(sqrt(g), 0, 1), clamp(sqrt(b), 0, 1))
+val(rgb) = isnan(rgb) ? 0 : clamp(sqrt(rgb), 0, 1)
+rgb(r, g, b) = RGB(val(r), val(g), val(b))
 
 function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	scancol = Vector{RGB}(undef, height)
 	for y in 1:height
 		r=g=b=0.0
 		for _ in 1:nsamples
-			(r,g,b) = (r,g,b) .+ ray_color(scene, get_ray(scene, (x + rand()) / width, (y + rand()) / height), max_depth)
+			set_ray(scene, (x + rand()) / width, (y + rand()) / height)
+			(r,g,b) = (r,g,b) .+ ray_color(scene, max_depth)
 		end
 		@inbounds scancol[height-y+1] = rgb(r/nsamples, g/nsamples, b/nsamples)
 	end
