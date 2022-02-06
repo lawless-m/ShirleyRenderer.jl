@@ -8,33 +8,30 @@ end
 
 export Sphere, Hit
 
-function hit(s::Sphere, t, ray)
-	p = at(ray, t)
-	outward_normal = (p - s.center) / s.radius
-	ff = dot(ray.direction, outward_normal)
-	norm = ff < 0 ? outward_normal : -outward_normal
-	Hit(p, norm, t, ff < 0)
-end
-
-
-function trace(sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Float64
+function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64)::Bool
 	oc = ray.origin - sphere.center
 	a = magnitudesq(ray.direction)
 	half_b = dot(oc, ray.direction)
 	c = magnitudesq(oc) - sphere.radius^2
 	discriminant = half_b^2 - a*c
 	if discriminant < 0
-		return -1.0
+		return false
 	end
 
 	sqrtd = sqrt(discriminant)
 	root = (-half_b - sqrtd) / a
-	if t_max < root || root < t_min 
+	if rec.t < root || root < t_min 
 		root = (-half_b + sqrtd) / a
-		if t_max < root || root < t_min
-			return -1.0
+		if rec.t < root || root < t_min
+			return false
 		end
 	end
 
-	root
+	rec.t = root
+	rec.p = at(ray, rec.t)
+	outward_normal = (rec.p - sphere.center) / sphere.radius
+	rec.front_face = dot(ray.direction, outward_normal) < 0
+	rec.normal = rec.front_face < 0 ? outward_normal : -outward_normal
+	rec.material = sphere.material
+	true
 end

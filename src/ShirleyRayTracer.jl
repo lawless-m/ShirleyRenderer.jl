@@ -96,15 +96,18 @@ struct Camera
 	Camera() = Camera(Point3(0,0,-1), Point3(0,0,0), Vec3(0,1,0), 40, 1, 0, 10)
 end
 
-struct Hit 
+
+abstract type Material end
+abstract type Hitable end
+
+mutable struct Hit 
 	p::Point3
 	normal::Vec3
 	t::Float64
 	front_face::Bool
+	material::Material
+	Hit() = new(zero(Point3), zero(Vec3), 0, true)
 end
-
-abstract type Material end
-abstract type Hitable end
 
 include("Hitables.jl")
 include("Materials.jl")
@@ -125,38 +128,33 @@ function get_ray(cam::Camera, s, t)
 	Ray(cam.origin + offset, cam.lower_left_corner + s * cam.horizontal + t * cam.vertical - cam.origin - offset, randf(cam.time0, cam.time1))
 end
 
-function trace(scene::Scene, ray::Ray, t_min::Float64, t_max::Float64)
-	closest_t = Inf
-	struck = 0
-	
-	for i in 1:length(scene.hitables)
-		t = trace(scene.hitables[i], ray, t_min, closest_t)
-		if t >= 0
-			closest_t = t
-			struck = i
+function trace!(rec::Hit, scene::Scene, ray::Ray, t_min::Float64, t_max::Float64)
+	rec.t = t_max
+	hit = false
+	for hitable in scene.hitables
+		if trace!(rec, hitable, ray, t_min)
+			hit = true
 		end
 	end
-	struck, closest_t
+	hit
 end
 
-function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float64}
+function ray_color!(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float64}
 	if depth <= 0 
         	return 0,0,0
 	end
-
-	struck, t = trace(scene, ray, 0.001, Inf)
-	if struck == 0
+	rec = Hit()
+	if !trace!(rec, scene, ray, 0.001, Inf)
 		t = 0.5*(ray.udirection.y + 1.0)
 		t1m = 1.0 - t
 		return t1m + 0.5t, t1m + 0.7t, t1m + t
 	end
 	
-	obj = scene.hitables[struck]
-	s, a = scatter(obj.material, ray, hit(obj, t, ray))
+	s, a = scatter(rec.material, ray, rec)
 	if s.origin.x == Inf
 		return 0,0,0
 	end
-	r,g,b = ray_color(scene, s, depth-1)
+	r,g,b = ray_color!(scene, s, depth-1)
 	a.r * r, a.g * g, a.b * b
 end
 
@@ -167,7 +165,7 @@ function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	for y in 1:height
 		r=g=b=0.0
 		for _ in 1:nsamples
-			(r,g,b) = (r,g,b) .+ ray_color(scene, get_ray(scene, (x + rand()) / width, (y + rand()) / height), max_depth)
+			(r,g,b) = (r,g,b) .+ ray_color!(scene, get_ray(scene, (x + rand()) / width, (y + rand()) / height), max_depth)
 		end
 		@inbounds scancol[height-y+1] = rgb(r/nsamples, g/nsamples, b/nsamples)
 	end
