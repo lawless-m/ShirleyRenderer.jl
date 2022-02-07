@@ -38,12 +38,15 @@ end
 
 function trace(sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Float64
 	oc = ray.origin - sphere.center
-	trace_root(sphere, ray, oc, t_min, t_max)
+	trace_root(oc, ray, sphere.radius, t_min, t_max)
 end
+
+bounding_box(sphere::Sphere, time0, time1) = AaBb(sphere.center - Vec3(sphere.radius, sphere.radius, sphere.radius),
+		sphere.center + Vec3(sphere.radius, sphere.radius, sphere.radius))
 
 struct MovingSphere <: Hitable
 	center0::Point3
-	centre1::Point3
+	center1::Point3
 	time0::Float64
 	time1::Float64
 	radius::Float64
@@ -65,14 +68,40 @@ function trace(ms::MovingSphere, ray::Ray, t_min::Float64, t_max::Float64)::Floa
 	trace_root(ms, ray, oc, t_min, t_max)
 end
 
+function box_compare(a, b, axis)
+	boxa = bounding_box(a, 0, 0)
+	boxb = bounding_box(b, 0, 0)
+	println(stderr, "No AaBb size check")
+
+	boxa.min[axis] < boxb.min[axis]
+end
 
 struct BVH <: Hitable
 	left::Vector{Hitable}
 	right::Vector{Hitable}
-	aabb::AaBb
+	box::AaBb
 	BVH(l, r) = new(l, r, AaBb())
 	BVH() = BVH(Vector{Hitable}(), Vector{Hitable}())
-	function BVH(hitables::Vector{Hitable})
-		
+	function BVH(hitables::Vector{Hitable}, time0, time1)
+
+		ltfn(axis) = (a,b)->box_compare(a, b, axis)
+
+		sort!(hitables, lt=ltfn(rand([1,2,3])))
+
+		if length(hitables) < 2
+			left = right = hitables
+		else
+			mid = floor(Int, length(hitables)/2)	
+			left = hitables[1:mid]
+			right = hitables[mid+1:end]
+		end
+		println(stderr, "No AaBb size check")
+		new(left, right, surrounding_box(bounding_box(left, time0, time1), bounding_box(right, time0, time1)))
 	end
 end
+
+bounding_box(bvh::BVH, time0, time1) = bvh.box
+
+bounding_box(hs::Vector{Hitable}, time0, time1) = surrounding_box(map(h->bounding_box(h, time0, time1), hs))
+
+

@@ -41,17 +41,19 @@ function two_spheres!(scene)
 end
 
 function two_perlin_spheres!(scene)
-    perlin = Lambertian(Perlin(4))
-    add!(scene, Point3(0,-1000,0), 1000, perlin)
-    add!(scene, Point3(0,2,0), 2, perlin)
+    perlin = Lambertian(Noise(4))
+    add!(scene, Sphere(Point3(0,-1000,0), 1000, perlin))
+    add!(scene, Sphere(Point3(0,2,0), 2, perlin))
 end
 
-function earth!(scene; filename="earthmap.jpg")
-    add!(scene, Sphere(Point3(0,0,0), 2, Lambertian(Texture(filename))))
+function earth!(scene; filename="../earthmap.jpg")
+    add!(scene, Sphere(Point3(0,0,0), 2, Lambertian(TextureMap(filename))))
 end
+
+#==
 
 function simple_light!(scene) 
-    perlin = Lambertian(Perlin(4));
+    perlin = Lambertian(Noise(4));
     add!(scene, Sphere(Point3(0,-1000,0), 1000, perlin))
     add!(scene, Sphere(Point3(0,2,0), 2, perlin))
 
@@ -157,4 +159,19 @@ function final_scene!(scene)
     end
 
     add!(scene, BVH(boxes, 0.0, 1.0) |> rotate_y(15) |> translate(Vec3(-100,270,395)))
+end
+==#
+
+defscene() = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Color(0.5,0.5,0.5))
+
+function main(image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50)
+	image_height = round(Int, image_width / aspect_ratio)
+    sc1 = [random_scene!, two_spheres!, two_perlin_spheres!, earth!]
+    #sc2 = [simple_light!, cornell_box!, cornell_smoke!, final_scene!]
+    for sc! in sc1
+        scene = defscene()
+        sc!(scene)
+	    image = render(scene, image_width, image_height, samples_per_pixel, max_depth)
+	    save("$(sc!).jpg", image)
+    end
 end

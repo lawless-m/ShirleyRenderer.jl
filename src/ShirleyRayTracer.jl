@@ -4,13 +4,14 @@ module ShirleyRayTracer
 using StaticArrays
 using LinearAlgebra
 using Images
+using Random
 
 const Vec3 = SVector{3, Float64}
 const Point3 = SVector{3, Float64}
 const Color = RGB{Float64}
 
-export Scene, Camera, Point3, Vec3, Color, Hitable, Hit
-export trace_scanline, render
+export Scene, Camera, Point3, Vec3, Color, Hitable, Hit, BVH
+export trace_scancol, render
 export magnitude, add!, randf
 
 magnitude(x,y) = sqrt(x^2 + y^2)
@@ -109,8 +110,10 @@ abstract type Material end
 abstract type Hitable end
 abstract type Texture end
 
+include("AaBb.jl")
 include("Hitables.jl")
 include("Textures.jl")
+include("Perlin.jl")
 include("Materials.jl")
 
 struct Scene
@@ -152,11 +155,6 @@ function ray_color(scene::Scene, ray::Ray, depth)::Tuple{Float64, Float64, Float
 	struck, t = trace(scene, ray, 0.001, Inf)
 	if struck == 0
 		return scene.background.r, scene.background.g, scene.background.b
-		#== week 1
-		t = 0.5*(ray.udirection.y + 1.0)
-		t1m = 1.0 - t
-		return t1m + 0.5t, t1m + 0.7t, t1m + t
-		==#
 	end
 	
 	obj = scene.hitables[struck]

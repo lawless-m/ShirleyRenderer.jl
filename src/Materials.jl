@@ -60,7 +60,7 @@ end
 struct DiffuseLight <: Material
 	emit::Texture
 	DiffuseLight(t::Texture) = new(t)
-	DiffuseLight(c::Color) = DiffuseLight(ColorTexture(c))
+	DiffuseLight(c::Color) = DiffuseLight(SolidColor(c))
 end
 
 emitted(e::DiffuseLight, u::Float64, v::Float64, p::Point3) = value(d.emit, u, v, p)
@@ -68,7 +68,7 @@ emitted(e::DiffuseLight, u::Float64, v::Float64, p::Point3) = value(d.emit, u, v
 struct Isotropic <: Material
 	albedo::Texture
 	Isotropic(t::Texture) = new(t)
-	Isotropic(c::Color) = Isotropic(ColorTexture(c))
+	Isotropic(c::Color) = Isotropic(SolidColor(c))
 end
 
 function scatter(i::Isotropic, ray::Ray, hit::Hit)
