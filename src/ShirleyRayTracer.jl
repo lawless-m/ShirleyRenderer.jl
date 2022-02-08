@@ -174,8 +174,9 @@ function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	scancol = Vector{RGB}(undef, height)
 	for y in 1:height
 		r=g=b=0.0
-		for _ in 1:nsamples
-			(r,g,b) = (r,g,b) .+ ray_color(scene, get_ray(scene, (x + rand()) / width, (y + rand()) / height), max_depth)
+		for _ in 1:nsamples # reduce allocations by not using tuples
+			rr, gg, bb = ray_color(scene, get_ray(scene, (x + rand()) / width, (y + rand()) / height), max_depth)
+			r += rr; g += gg; b += bb
 		end
 		@inbounds scancol[height-y+1] = rgb(r/nsamples, g/nsamples, b/nsamples)
 	end
