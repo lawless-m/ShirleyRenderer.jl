@@ -104,4 +104,13 @@ bounding_box(bvh::BVH, time0, time1) = bvh.box
 
 bounding_box(hs::Vector{Hitable}, time0, time1) = surrounding_box(map(h->bounding_box(h, time0, time1), hs))
 
+function trace(bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)::Float64
+	if !trace(bvh.box, ray, t_min, t_max)
+		return -1.0
+	end
 
+	t_left = trace(bvh.left, ray, t_min, t_max)
+	t_right = trace(bvh.right, ray, t_left >= 0 ? t_left, t_max)
+
+	t_right >= 0 ? t_right : t_left
+end

@@ -1,6 +1,6 @@
 
 rand_grey(low=0, high=1) = begin r=randf(low, high); Color(r,r,r) end
-rand_color() = Color(rand()*rand(),rand()*rand(),rand()*rand()) 
+rand_color() = Color(rand()*rand(), rand()*rand(), rand()*rand()) 
 
 
 function random_scene!(scene)
@@ -148,7 +148,7 @@ function final_scene!(scene)
     boundary = Sphere(Point3(0,0,0), 5000, Dielectric(1.5))
     add!(scene, ConstantMedium(boundary, .0001, Color(1,1,1)))
 
-    add!(scene, Sphere(Point3(400,200,400), 100, Lambertian("earthmap.jpg")))
+    add!(scene, Sphere(Point3(400,200,400), 100, Lambertian(TextureMap("earthmap.jpg"))))
     add!(scene, Sphere(Point3(220,280,300), 80, Lambertian(Perlin(0.1))))
 
     boxes = Vector{Hitable}()

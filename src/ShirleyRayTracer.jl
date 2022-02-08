@@ -1,4 +1,3 @@
-
 module ShirleyRayTracer
 
 using StaticArrays
@@ -174,7 +173,7 @@ function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	scancol = Vector{RGB}(undef, height)
 	for y in 1:height
 		r=g=b=0.0
-		for _ in 1:nsamples # reduce allocations by not using tuples
+		for _ in 1:nsamples # reduce allocations by not using tuples, negligible overall effect but even so
 			rr, gg, bb = ray_color(scene, get_ray(scene, (x + rand()) / width, (y + rand()) / height), max_depth)
 			r += rr; g += gg; b += bb
 		end

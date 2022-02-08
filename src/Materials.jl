@@ -23,7 +23,6 @@ struct Metal <: Material
 	albedo::Color
 	fuzz::Float64
 	Metal(a, f) = new(a, f)
-	Metal(r,g,b,f) = Metal(Color(r,g,b), f)
 end
 
 function scatter(m::Metal, ray::Ray, hit::Hit)
