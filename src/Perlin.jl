@@ -16,14 +16,17 @@ function noise(p::Perlin, at::Point3)
     u = at.x - i
     v = at.y - j
     w = at.z - k
-    c = Array{Float64}(undef, 2,2,2)
+    c = Array{Vec3}(undef, 2,2,2)
 
-    for di in 1:2, dj in 1:2, dj in 1:2
-        c[di, dj, dk] = ranvec[
-            p.perm_x[(i+di)&255] ^
-            p.perm_y[(i+dj)&255] ^
-            p.perm_z[(i+dk)&255]
-        ]
+    clmp(n) = min(max(n, 1), 256)
+
+    for di in 1:2, dj in 1:2, dk in 1:2
+
+        k = xor( p.perm_x[clmp((i+di)&256)],
+                p.perm_y[clmp((i+dj)&256)],
+                p.perm_z[clmp((i+dk)&256)]) 
+        k = min(max(k, 1), 256)
+        c[di, dj, dk] = p.ranvec[k]
     end
 
     perlin_interp(c, u, v, w)
@@ -43,7 +46,7 @@ function perlin_interp(c, u, v, w)
     a
 end
 
-function turb(p::Perlin, at, depth)
+function turb(p::Perlin, at, depth=7)
     a = 0
     weight = 1.0
     for i in 1:depth

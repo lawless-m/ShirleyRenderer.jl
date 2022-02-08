@@ -4,7 +4,7 @@ struct AaBb
     max::Point3
 end
 
-function hit(aabb::AaBb, ray, t_min, t_max)
+function trace!(rec, aabb::AaBb, ray, t_min, t_max)
     for a in 1:3
         a1 = (aabb.min[a] - ray.origin[a]) / ray.direction[a]
         a2 = (aabb.max[a] - ray.origin[a]) / ray.direction[a]

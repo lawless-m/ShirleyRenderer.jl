@@ -1,4 +1,22 @@
-export Sphere, MovingSphere
+export Hit, Sphere, MovingSphere, BVH
+
+mutable struct Hit 
+	p::Point3
+	normal::Vec3
+	t::Float64
+	front_face::Bool
+	u::Float64
+	v::Float64
+	material::Material
+	Hit() = new(zero(Point3), zero(Vec3), 0, true, 0, 0)
+end
+
+trace!(rec::Hit, h::Hitable, ray::Ray, t_min::Float64, t_max::Float64)::Bool = false
+
+function set_face_normal!(h::Hit, ray, outward_normal)
+	h.front_face = dot(ray.direction, outward_normal) < 0
+	h.normal = h.front_face ? outward_normal : -outward_normal
+end
 
 struct Sphere <: Hitable
 	center::Point3
@@ -15,7 +33,7 @@ function hit(s::Sphere, t, ray)
 	Hit(p, norm, t, ff < 0, Inf, -Inf)
 end
 
-function trace_root(oc, ray, radius, t_min, t_max)
+function trace_root(oc, ray, radius, t_min, t_max)::Float64
 	a = magnitudesq(ray.direction)
 	half_b = dot(oc, ray.direction)
 	c = magnitudesq(oc) - radius^2
@@ -36,12 +54,19 @@ function trace_root(oc, ray, radius, t_min, t_max)
 	root
 end
 
-function trace(sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Float64
+function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Bool
 	oc = ray.origin - sphere.center
-	trace_root(oc, ray, sphere.radius, t_min, t_max)
+	root = trace_root(oc, ray, sphere.radius, t_min, t_max)
+	if root < 0 return false end
+
+	rec.t = root
+	rec.p = at(ray, rec.t)
+	set_face_normal!(rec, ray, (rec.p - sphere.center) / sphere.radius)
+	rec.material = sphere.material
+	true
 end
 
-bounding_box(sphere::Sphere, time0, time1) = AaBb(sphere.center - Vec3(sphere.radius, sphere.radius, sphere.radius),
+bounding_box(sphere::Sphere, time0, time1) = true, AaBb(sphere.center - Vec3(sphere.radius, sphere.radius, sphere.radius),
 		sphere.center + Vec3(sphere.radius, sphere.radius, sphere.radius))
 
 struct MovingSphere <: Hitable
@@ -60,19 +85,28 @@ function bounding_box(m::MovingSphere, time0, time1)
 		c = center(m, t)
 		AaBb(c - Vec3(m.radius, m.radius, m.radius), c + Vec3(m.radius, m.radius, m.radius))
 	end
-	surrounding_box(aabb(m.time0), aabb(m.time1))
+	true, surrounding_box(aabb(m.time0), aabb(m.time1))
 end
 
-function trace(ms::MovingSphere, ray::Ray, t_min::Float64, t_max::Float64)::Float64
+function trace!(rec::Hit, ms::MovingSphere, ray::Ray, t_min::Float64, t_max::Float64)
 	oc = ray.origin - center(ms, ray.time)
-	trace_root(ms, ray, oc, t_min, t_max)
+	root = trace_root(oc, ray, ms.radius, t_min, t_max)
+	if root < 0 return false end
+
+	rec.t = root
+	rec.p = at(ray, rec.t)
+	set_face_normal!(rec, ray, (rec.p - center(ms, ray.time)) / ms.radius)
+	rec.material = ms.material
+	true
 end
 
 function box_compare(a, b, axis)
-	boxa = bounding_box(a, 0, 0)
-	boxb = bounding_box(b, 0, 0)
-	println(stderr, "No AaBb size check")
+	fa, boxa = bounding_box(a, 0, 0)
+	fb, boxb = bounding_box(b, 0, 0)
+	if !(fa && fb)
+		println(stderr, "No bounding box in bvh_node constructor.")
 
+	end
 	boxa.min[axis] < boxb.min[axis]
 end
 
@@ -100,17 +134,17 @@ struct BVH <: Hitable
 	end
 end
 
-bounding_box(bvh::BVH, time0, time1) = bvh.box
+bounding_box(bvh::BVH, time0, time1) = true, bvh.box
 
-bounding_box(hs::Vector{Hitable}, time0, time1) = surrounding_box(map(h->bounding_box(h, time0, time1), hs))
+bounding_box(hs::Vector{Hitable}, time0, time1) = true, surrounding_box(map(h->bounding_box(h, time0, time1), hs))
 
-function trace(bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)::Float64
-	if !trace(bvh.box, ray, t_min, t_max)
-		return -1.0
+function trace!(rec::Hit, bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)
+	if !trace!(rec, bvh.box, ray, t_min, t_max)
+		return false
 	end
 
-	t_left = trace(bvh.left, ray, t_min, t_max)
-	t_right = trace(bvh.right, ray, t_left >= 0 ? t_left, t_max)
+	hit_left = trace!(rec, bvh.left, ray, t_min, t_max)
+	hit_right = trace!(rec, bvh.right, ray, t_min, hit_left ? rec.t : t_max)
 
-	t_right >= 0 ? t_right : t_left
+	hit_left || hit_right
 end

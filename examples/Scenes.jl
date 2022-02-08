@@ -1,3 +1,5 @@
+using ShirleyRayTracer
+
 
 rand_grey(low=0, high=1) = begin r=randf(low, high); Color(r,r,r) end
 rand_color() = Color(rand()*rand(), rand()*rand(), rand()*rand()) 
@@ -46,7 +48,7 @@ function two_perlin_spheres!(scene)
     add!(scene, Sphere(Point3(0,2,0), 2, perlin))
 end
 
-function earth!(scene; filename="../earthmap.jpg")
+function earth!(scene; filename="/home/matt/GitHub/ShirleyRenderer.jl/earthmap.jpg")
     add!(scene, Sphere(Point3(0,0,0), 2, Lambertian(TextureMap(filename))))
 end
 
@@ -164,7 +166,7 @@ end
 
 defscene() = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Color(0.5,0.5,0.5))
 
-function main(image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50)
+function main(;image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50)
 	image_height = round(Int, image_width / aspect_ratio)
     sc1 = [random_scene!, two_spheres!, two_perlin_spheres!, earth!]
     #sc2 = [simple_light!, cornell_box!, cornell_smoke!, final_scene!]
@@ -172,6 +174,6 @@ function main(image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_dep
         scene = defscene()
         sc!(scene)
 	    image = render(scene, image_width, image_height, samples_per_pixel, max_depth)
-	    save("$(sc!).jpg", image)
+	    ShirleyRayTracer.save("$(sc!).jpg", image)
     end
 end

@@ -16,7 +16,7 @@ struct Checker <: Texture
     Checker(o::Color, e::Color) = Checker(SolidColor(o), SolidColor(e))
 end
 
-value(c::Checker, u, v, p) = sin(10p.x) * sin(10p.y) * sin(10p.z) < 0 ? value(odd, u, v, p) : value(even, u, v, p)
+value(c::Checker, u, v, p) = sin(10p.x) * sin(10p.y) * sin(10p.z) < 0 ? value(c.odd, u, v, p) : value(c.even, u, v, p)
 
 struct Noise <: Texture
     noise
@@ -25,7 +25,7 @@ struct Noise <: Texture
 end
 
 function value(n::Noise, u, v, p)
-    v = 1 + sin(n.scale*p.z + 10*turb(p.noise, p))
+    v = 1 + sin(n.scale*p.z + 10*turb(n.noise, p))
     Color(0.5v, 0.5v, 0.5v)
 end
 
@@ -34,10 +34,9 @@ struct TextureMap <: Texture
     TextureMap(fname::AbstractString) = new(load(fname))
 end
 
-function value(i::TextureMap, u, v, p)
-    h, w = size(i.rgb)
+function value(tm::TextureMap, u, v, p)
+    h, w = size(tm.rgb)
     i = 1 + round(Int, clamp(u, 0, 1) * (w-1))
     j = 1 + round(Int, clamp(v, 0, 1) * (h-1))
-    i[j,i]
+    tm.rgb[j,i]
 end
-
