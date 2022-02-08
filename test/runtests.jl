@@ -15,7 +15,7 @@ end
 @testset "ShirleyRayTracer.jl" begin
     @test single_scancol()
     begin 
-        include("../src/Scenes.jl")
+        include("../examples/Scenes.jl")
         scene = defscene()
         random_scene!(scene)
         @test length(scene.hitables) == 1

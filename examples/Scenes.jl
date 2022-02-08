@@ -1,4 +1,5 @@
 using ShirleyRayTracer
+using Pipe
 
 
 rand_grey(low=0, high=1) = begin r=randf(low, high); Color(r,r,r) end
@@ -52,8 +53,6 @@ function earth!(scene; filename="/home/matt/GitHub/ShirleyRenderer.jl/earthmap.j
     add!(scene, Sphere(Point3(0,0,0), 2, Lambertian(TextureMap(filename))))
 end
 
-#==
-
 function simple_light!(scene) 
     perlin = Lambertian(Noise(4));
     add!(scene, Sphere(Point3(0,-1000,0), 1000, perlin))
@@ -77,14 +76,14 @@ function cornell_box!(scene)
     add!(scene, XZRect(0, 555, 0, 555, 555, white))
     add!(scene, XYRect(0, 555, 0, 555, 555, white))
 
-    box = Box(Point3(0,0,0), Point3(165,330,165), white) |> 
-        rotate_y(15) |>
-        translate(Vec3(265,0,295))
+    box = @pipe Box(Point3(0,0,0), Point3(165,330,165), white) |> 
+        RotateY(_, 15) |>
+        Translate(_, Vec3(265,0,295))
     add!(scene, box)
 
-    box = Box(Point3(0,0,0), Point3(165,165,165), white) |>
-        rotate_y(-18) |>
-        translate(Vec3(130,0,65))
+    box = @pipe Box(Point3(0,0,0), Point3(165,165,165), white) |>
+        RotateY(_, -18) |>
+        Translate(_, Vec3(130,0,65))
     add!(scene, box)
 end
 
@@ -101,15 +100,15 @@ function cornell_smoke!(scene)
     add!(scene, XZRect(0, 555, 0, 555, 0, white))
     add!(scene, XYRect(0, 555, 0, 555, 555, white))
 
-    box = Box(Point3(0,0,0), Point3(165,330,165), white) |> 
-        rotate_y(15) |>
-        translate(Vec3(265,0,295))
+    box = @pipe Box(Point3(0,0,0), Point3(165,330,165), white) |> 
+        RotateY(_, 15) |>
+        Translate(_, Vec3(265,0,295))
 
     add!(scene, ConstantMedium(box, 0.01, Color(0,0,0)))
 
-    box = Box(Point3(0,0,0), Point3(165,165,165), white) |>
-        rotate_y(-18) |>
-        translate(Vec3(130,0,65))
+    box = @pipe Box(Point3(0,0,0), Point3(165,165,165), white) |>
+        RotateY(_, -18) |>
+        Translate(_, Vec3(130,0,65))
 
     add!(scene, ConstantMedium(box, 0.01, Color(1,1,1)))
 end
@@ -160,9 +159,8 @@ function final_scene!(scene)
         push!(boxes, Sphere(Point3(r,r,r), 10, white))
     end
 
-    add!(scene, BVH(boxes, 0.0, 1.0) |> rotate_y(15) |> translate(Vec3(-100,270,395)))
+    add!(scene, @pipe BVH(boxes, 0.0, 1.0) |> RotateY(_, 15) |> Translate(_, Vec3(-100,270,395)))
 end
-==#
 
 defscene() = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Color(0.5,0.5,0.5))
 

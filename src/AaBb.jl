@@ -27,15 +27,10 @@ function longest_axis(aabb::AaBb)
     (x > y && x > z) ? 1 : y > z ? 2 : 3
 end
 
-"""
-    surrounding_box(box0, box1)
-Expand the bouding box to encompase two other bounding boxes
-"""
-surrounding_box(box0, box1) = surrounding_box((box0, box1))
-        
-function surrounding_box(boxes)
+function surrounding_box(boxes::Vector{AaBb})
     x=y=z = Inf
     X=Y=Z = -Inf
+try
     for box in boxes, p in (box.min, box.max)
         # min
         x = p.x < x ? p.x : x
@@ -46,5 +41,11 @@ function surrounding_box(boxes)
         Y = p.y > y ? p.y : Y
         Z = p.z > Z ? p.z : Z
     end
+catch
+	for b in boxes
+	println(stderr, b)
+	end
+	exit()
+end
     AaBb(Point3(x,y,z), Point3(X,Y,Z))
 end
