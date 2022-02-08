@@ -138,7 +138,7 @@ bounding_box(bvh::BVH, time0, time1) = true, bvh.box
 
 bounding_box(hs::Vector{Hitable}, time0, time1) = true, surrounding_box(map(h->bounding_box(h, time0, time1), hs))
 
-function trace!(rec::Hit, bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)
+function trace!(rec::Hit, bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)::Bool
 	if !trace!(rec, bvh.box, ray, t_min, t_max)
 		return false
 	end
@@ -148,3 +148,138 @@ function trace!(rec::Hit, bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)
 
 	hit_left || hit_right
 end
+
+function set_face_normal!(h::Hit, ray, outward_normal)
+	h.front_face = dot(ray.direction, outward_normal) < 0
+	h.normal = h.front_face ? outward_normal : -outward_normal
+end
+
+struct XYRect <: Hitable
+	x0
+	x1
+	y0
+	y1
+	k
+	material
+end
+
+bounding_box(r::XYRect, time0, time1) = true, AaBb(Point3(r.x0, r.y0, r.k-0.0001), Point3(r.x1, r.y1, r.k+0.001))
+
+function trace!(rec::Hit, xyr::XYRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+	t = (xyr.k - ray.origin.z) / r.direction.z
+	if t < t_min || t > t_max
+		return false
+	end
+
+	x = ray.origin.x + t*ray.direction.x
+	y = ray.origin.y + t*ray.direction.y
+	if x < xyr.x0 || x > xyr.x1 || y < xyr.y0 || y > xyr.y1
+		return false
+	end
+
+	rec.u = (x - xyr.x0) / (xyr.x1 - xyr.x0)
+	rec.v = (y - xyr.y0) / (xyr.y1 - xyr.y0)
+	rec.t = t
+	set_face_normal!(ray, Vec3(0,0,1))
+	rec.material = xyr.material
+	rec.p = at(ray, t)
+
+	true
+end
+
+struct XZRect <: Hitable
+	x0
+	x1
+	z0
+	z1
+	k
+	material
+end
+
+bounding_box(r::XZRect, time0, time1) = true, AaBb(Point3(r.x0, r.k-0.0001, r.z0), Point3(r.x1, r.k+0.0001, r.z1))
+
+function trace!(rec::Hit, xzr::XYRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+	t = (xzr.k - ray.origin.y) / r.direction.y
+	if t < t_min || t > t_max
+		return false
+	end
+
+	x = ray.origin.x + t*ray.direction.x
+	z = ray.origin.z + t*ray.direction.z
+	if x < xzr.x0 || x > xzr.x1 || z < xzr.z0 || z > xzr.z1
+		return false
+	end
+
+	rec.u = (x - xzr.x0) / (xzr.x1 - xzr.x0)
+	rec.v = (z - xzr.z0) / (xzr.z1 - xzr.z0)
+	rec.t = t
+	set_face_normal!(ray, Vec3(0,1,0))
+	rec.material = xzr.material
+	rec.p = at(ray, t)
+
+	true
+end
+
+struct YZRect <: Hitable
+	y0
+	y1
+	z0
+	z1
+	k
+	material
+end
+
+bounding_box(r::YZRect, time0, time1) = true, AaBb(Point3(r.k-0.0001, r.y0, r.z0), Point3(r.k+0.0001, r.y1, r.z1))
+
+function trace!(rec::Hit, yzr::YZRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+	t = (yzr.k - ray.origin.x) / r.direction.x
+	if t < t_min || t > t_max
+		return false
+	end
+
+	y = ray.origin.y + t*ray.direction.y
+	z = ray.origin.z + t*ray.direction.z
+	if y < yzr.y0 || y > yzr.y1 || z < yzr.z0 || z > yzr.z1
+		return false
+	end
+
+	rec.u = (y - yzr.y0) / (yzr.y1 - yzr.y0)
+	rec.v = (z - yzr.z0) / (yzr.z1 - yzr.z0)
+	rec.t = t
+	set_face_normal!(ray, Vec3(1,0,0))
+	rec.material = yzr.material
+	rec.p = at(ray, t)
+
+	true
+end
+
+struct Box <: Hitable
+	box_min
+	box_max
+	sides
+	function Box(p0, p1, m)
+		sides = Vector{Hitable}(undef, 6)
+		sides[1] = XYRect(p0.x, p1.x, p0.y, p1.y, p1.z), m)
+		sides[2] = XYRect(p0.x, p1.x, p0.y, p1.y, p0.z), m)
+
+		sides[3] = XZRect(p0.x, p1.x, p0.z, p1.z, p1.y), m)
+		sides[4] = XZRect(p0.x, p1.x, p0.z, p1.z, p0.y), m)
+
+		sides[5] = YZRect(p0.y, p1.y, p0.z, p1.z, p1.x), m)
+		sides[6] = YZRect(p0.y, p1.y, p0.z, p1.z, p0.x), m)
+		
+		new(p0, p1, sides)
+	end
+end
+
+trace!(rec::Hit, b::Box, ray::Ray, t_min::Float64, t_max::Float64)::Bool = trace!(rec::Hit, b.sides, ray, t_min, t_max)
+
+
+
+
+
+
+
+
+
+
