@@ -6,12 +6,12 @@ rand_grey(low=0, high=1) = begin r=randf(low, high); Color(r,r,r) end
 rand_color() = Color(rand()*rand(), rand()*rand(), rand()*rand()) 
 
 
-function random_scene!(scene)
+function random_scene(scene; filename="")
     
     checker = Checker(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9))
 
     hitables = Vector{Hitable}()
-    push!(hitables, Sphere(Point3(0,-1000,0), 1000, Lambertian(checker)))
+    push!(hitables, Sphere(Point3(0,-1000,0), 1000, add!(scene, Lambertian(checker))))
 
     for a in -11:10, b in -11:10
         choose_mat = rand()
@@ -20,54 +20,62 @@ function random_scene!(scene)
             if choose_mat < 0.8
                 # // diffuse
                 center2 = center + Vec3(0, randf(0,.5), 0)
-                push!(hitables, MovingSphere(center, center2, 0.0, 1.0, 0.2, Lambertian(rand_color())))
+                push!(hitables, MovingSphere(center, center2, 0.0, 1.0, 0.2, add!(scene, Lambertian(rand_color()))))
             elseif choose_mat < 0.95
                 #  // metal
-                push!(hitables, Sphere(center, 0.2, Metal(rand_grey(0.5,1), randf(0, 0.5))));
+                push!(hitables, Sphere(center, 0.2, add!(scene, Metal(rand_grey(0.5,1), randf(0, 0.5)))))
             else
                 #    // glass
-                push!(hitables, Sphere(center, 0.2, Dielectric(1.5)));
+                push!(hitables, Sphere(center, 0.2, add!(scene, Dielectric(1.5))))
             end 
         end
     end
 
-    push!(hitables, Sphere(Point3(0, 1, 0), 1.0, Dielectric(1.5)));
-    push!(hitables, Sphere(Point3(-4, 1, 0), 1.0, Lambertian(Color(0.4, 0.2, 0.1))));
-    push!(hitables, Sphere(Point3(4, 1, 0), 1.0, Metal(Color(0.7, 0.6, 0.5), 0.0)));
+    push!(hitables, Sphere(Point3(0, 1, 0), 1.0, add!(scene, Dielectric(1.5))))
+    push!(hitables, Sphere(Point3(-4, 1, 0), 1.0, add!(scene, Lambertian(Color(0.4, 0.2, 0.1)))))
+    push!(hitables, Sphere(Point3(4, 1, 0), 1.0, add!(scene, Metal(Color(0.7, 0.6, 0.5), 0.0))))
     add!(scene, BVH(hitables, 0.0, 1.0))
+    scene
 end
 
-function two_spheres!(scene)
-    checker = Checker(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9))
-    add!(scene, Sphere(Point3(0,-10, 0), 10, Lambertian(checker)))
-    add!(scene, Sphere(Point3(0,10, 0), 10, Lambertian(checker)))
+function two_spheres(scene; filename="")
+    checker = add!(scene, Lambertian(Checker(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9))))
+    add!(scene, Sphere(Point3(0,-10, 0), 10, checker))
+    add!(scene, Sphere(Point3(0,10, 0), 10, checker))
+    scene
 end
 
-function two_perlin_spheres!(scene)
-    perlin = Lambertian(Noise(4))
+function two_perlin_spheres(scene; filename="")
+    perlin = add!(scene, Lambertian(Noise(4)))
     add!(scene, Sphere(Point3(0,-1000,0), 1000, perlin))
     add!(scene, Sphere(Point3(0,2,0), 2, perlin))
+    scene
 end
 
-function earth!(scene; filename="/home/matt/GitHub/ShirleyRenderer.jl/earthmap.jpg")
-    add!(scene, Sphere(Point3(0,0,0), 2, Lambertian(TextureMap(filename))))
+function earth(scene; filename="earthmap.jpg")    
+    t = add!(scene, Lambertian(TextureMap(filename)))
+    add!(scene, Sphere(Point3(0, 1, 0), 1.0, t))
+    add!(scene, Sphere(Point3(-4, 1, 0), 1.0, t))
+    add!(scene, Sphere(Point3(4, 1, 0), 1.0, t))
+    scene
 end
 
-function simple_light!(scene) 
-    perlin = Lambertian(Noise(4));
+function simple_light(scene; filename="")
+    perlin = add!(scene, Lambertian(Noise(4)))
     add!(scene, Sphere(Point3(0,-1000,0), 1000, perlin))
     add!(scene, Sphere(Point3(0,2,0), 2, perlin))
 
-    difflight = DiffuseLight(Color(4,4,4))
+    difflight = add!(scene, DiffuseLight(Color(4,4,4)))
     add!(scene, Sphere(Point3(0,7,0), 2, difflight))
     add!(scene, XYRect(3, 5, 1, 3, -2, difflight))
+    scene
 end
 
-function cornell_box!(scene)
-    red = Lambertian(Color(.65, .05, .05))
-    white = Lambertian(Color(.73, .73, .73))
-    green = Lambertian(Color(.12, .45, .15))
-    light = Lambertian(Color(15, 15, 15))
+function cornell_box(scene; filename="")
+    red = add!(scene, Lambertian(Color(.65, .05, .05)))
+    white = add!(scene, Lambertian(Color(.73, .73, .73)))
+    green = add!(scene, Lambertian(Color(.12, .45, .15)))
+    light = add!(scene, Lambertian(Color(15, 15, 15)))
 
     add!(scene, YZRect(0, 555, 0, 555, 555, green))
     add!(scene, YZRect(0, 555, 0, 555, 0, red))
@@ -85,13 +93,14 @@ function cornell_box!(scene)
         RotateY(_, -18) |>
         Translate(_, Vec3(130,0,65))
     add!(scene, box)
+    scene
 end
 
-function cornell_smoke!(scene)
-    red = Lambertian(Color(.65, .05, .05))
-    white = Lambertian(Color(.73, .73, .73))
-    green = Lambertian(Color(.12, .45, .15))
-    light = Lambertian(Color(7,7,7))
+function cornell_smoke(scene; filename="")
+    red = add!(scene, Lambertian(Color(.65, .05, .05)))
+    white = add!(scene, Lambertian(Color(.73, .73, .73)))
+    green = add!(scene, Lambertian(Color(.12, .45, .15)))
+    light = add!(scene, Lambertian(Color(7,7,7)))
 
     add!(scene, YZRect(0, 555, 0, 555, 555, green))
     add!(scene, YZRect(0, 555, 0, 555, 0, red))
@@ -104,19 +113,19 @@ function cornell_smoke!(scene)
         RotateY(_, 15) |>
         Translate(_, Vec3(265,0,295))
 
-    add!(scene, ConstantMedium(box, 0.01, Color(0,0,0)))
+    add!(scene, ConstantMedium(box, 0.01, add!(scene, Isotropic(Color(0,0,0)))))
 
     box = @pipe Box(Point3(0,0,0), Point3(165,165,165), white) |>
         RotateY(_, -18) |>
         Translate(_, Vec3(130,0,65))
 
-    add!(scene, ConstantMedium(box, 0.01, Color(1,1,1)))
+    add!(scene, ConstantMedium(box, 0.01, add!(scene, Isotropic(Color(1,1,1)))))
+    scene
 end
 
-
-function final_scene!(scene)
+function final_scene(scene; filename="earthmap.jpg")
     
-    ground = Lambertian(Color(0.48, 0.83, 0.53))
+    ground = add!(scene, Lambertian(Color(0.48, 0.83, 0.53)))
 
     boxes = Vector{Hitable}()
     boxes_per_side = 20;
@@ -131,47 +140,48 @@ function final_scene!(scene)
 
     add!(scene, BVH(boxes, 0, 1))
 
-    light = DiffuseLight(Color(7, 7, 7))
+    light = add!(scene, DiffuseLight(Color(7, 7, 7)))
 
     add!(scene, XZRect(123, 423, 147, 412, 554, light))
 
     center1 = Point3(400, 400, 200)
     center2 = center1 + Vec3(30,0,0)
 
-    add!(scene, MovingSphere(center1, center2, 0, 1, 50, Lambertian(Color(0.7, 0.3, 0.1))))
-    add!(scene, Sphere(Point3(260, 150, 45), 50, Dielectric(1.5)))
-    add!(scene, Sphere(Point3(0, 150, 145), 50, Metal(Color(0.8, 0.8, 0.9), 1.0)))
+    d15 = add!(scene, Dielectric(1.5))
+
+    add!(scene, MovingSphere(center1, center2, 0, 1, 50, add!(scene, Lambertian(Color(0.7, 0.3, 0.1)))))
+    add!(scene, Sphere(Point3(260, 150, 45), 50, d15))
+    add!(scene, Sphere(Point3(0, 150, 145), 50, add!(scene, Metal(Color(0.8, 0.8, 0.9), 1.0))))
     
-    boundary = Sphere(Point3(360,150,145), 70, Dielectric(1.5))
+    boundary = Sphere(Point3(360,150,145), 70, d15)
     add!(scene, boundary)
-    add!(scene, ConstantMedium(boundary, 0.2, Color(0.2, 0.4, 0.9)))
+    add!(scene, ConstantMedium(boundary, 0.2, add!(scene, Isotropic(Color(0.2, 0.4, 0.9)))))
     
-    boundary = Sphere(Point3(0,0,0), 5000, Dielectric(1.5))
-    add!(scene, ConstantMedium(boundary, .0001, Color(1,1,1)))
+    boundary = Sphere(Point3(0,0,0), 5000, d15)
+    add!(scene, ConstantMedium(boundary, .0001, add!(scene, Isotropic(Color(1,1,1)))))
 
-    add!(scene, Sphere(Point3(400,200,400), 100, Lambertian(TextureMap("earthmap.jpg"))))
-    add!(scene, Sphere(Point3(220,280,300), 80, Lambertian(Perlin(0.1))))
-
+    add!(scene, Sphere(Point3(400,200,400), 100, add!(scene, Lambertian(TextureMap(filename)))))
+    add!(scene, Sphere(Point3(220,280,300), 80, add!(scene, Lambertian(Noise(0.1)))))
     boxes = Vector{Hitable}()
-    white = Lambertian(Color(.73, .73, .73))
+    white = add!(scene, Lambertian(Color(.73, .73, .73)))
     for _ in 1:1000
         r = randf(0, 165)
         push!(boxes, Sphere(Point3(r,r,r), 10, white))
     end
 
     add!(scene, @pipe BVH(boxes, 0.0, 1.0) |> RotateY(_, 15) |> Translate(_, Vec3(-100,270,395)))
+    scene
 end
 
 defscene() = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Color(0.5,0.5,0.5))
 
-function main(;image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50)
+function main(;image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50, mapfilename="/home/matt/GitHub/ShirleyRenderer.jl/examples/earthmap.jpg", scenes=[random_scene, two_spheres, two_perlin_spheres, earth, simple_light, cornell_box, cornell_smoke, final_scene])
 	image_height = round(Int, image_width / aspect_ratio)
-    sc1 = [random_scene!, two_spheres!, two_perlin_spheres!, earth!]
-    #sc2 = [simple_light!, cornell_box!, cornell_smoke!, final_scene!]
-    for sc! in sc1
-        scene = defscene()
-        sc!(scene)
-	    image = render(scene, image_width, image_height, samples_per_pixel, max_depth)
-	    ShirleyRayTracer.save("$(sc!).jpg", image)
+    for sc! in scenes
+        println("sc $(sc!)")
+        @time @pipe defscene() |> 
+              sc!(_; filename=mapfilename) |> 
+              render(_, image_width, image_height, samples_per_pixel, max_depth) |>
+              ShirleyRayTracer.save("$(sc!).jpg", _)
     end
 end

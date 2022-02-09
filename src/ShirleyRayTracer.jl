@@ -47,12 +47,6 @@ function random_in_hemisphere(normal)
     dot(in_unit_sphere, normal) > 0.0 ? in_unit_sphere : -in_unit_sphere
 end
 
-function refract(uv, n, etai_over_etat) 
-    cos_theta = min(dot(-uv, n), 1.0)
-    r_out_perp = etai_over_etat * (uv + cos_theta*n)
-    r_out_parallel = -sqrt(abs(1.0 - magnitudesq(r_out_perp))) * n
-    r_out_perp + r_out_parallel
-end
 
 include("Ray.jl")
 include("Camera.jl")
@@ -66,43 +60,16 @@ include("Hitables.jl")
 include("Textures.jl")
 include("Perlin.jl")
 include("Materials.jl")
-
-struct Scene
-	camera::Camera
-	hitables::Vector{Hitable}
-	background::Color
-	Scene(cam, color) = new(cam, Vector{Hitable}(), color)
-end
-
-add!(s::Scene, h::Hitable) = push!(s.hitables, h)
+include("Scene.jl")
 
 function trace!(rec::Hit, hitables::Vector{Hitable}, ray::Ray, t_min::Float64, t_max::Float64)
-	hit = false
+	hit::Bool = false
 	for hitable in hitables
 		if trace!(rec, hitable, ray, t_min, t_max)
 			hit = true
 		end
 	end
 	hit
-end
-
-function ray_color!(rec::Hit, ray::Ray, scene::Scene, depth)::Tuple{Float64, Float64, Float64}
-	if depth <= 0 
-        	return 0,0,0
-	end
-
-	hit = trace!(rec, scene.hitables, ray, 0.001, Inf)
-	if !hit
-		return scene.background.r, scene.background.g, scene.background.b
-	end
-	
-	emit = emitted(rec.material, rec.u, rec.v, rec.p)
-	scattered, attenutation = scatter!(rec.material, ray, rec)
-	if !scattered
-		return emit.r, emit.g, emit.b
-	end
-	r,g,b = ray_color!(rec, ray, scene, depth-1)
-	emit.r + attenutation.r * r, emit.g + attenutation.g * g, emit.b + attenutation.b * b
 end
 
 rgb(r, g, b) = RGB(clamp(sqrt(r), 0, 1), clamp(sqrt(g), 0, 1), clamp(sqrt(b), 0, 1))
