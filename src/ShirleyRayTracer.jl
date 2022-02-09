@@ -9,7 +9,7 @@ const Vec3 = SVector{3, Float64}
 const Point3 = SVector{3, Float64}
 const Color = RGB{Float64}
 
-export Scene, Camera, Point3, Vec3
+export Scene, Camera, Point3, Vec3, Color
 export trace_scanline, render
 export magnitude, add!, randf
 
@@ -27,7 +27,7 @@ near_zero(v) = v.x < 1e-8 && v.y < 1e-8 && v.z < 1e-8
 function random_in_unit_disk()
 	x,y = randf(-1, 1), randf(-1, 1)
 	while magnitudesq(x,y) >= 1
-     	x,y = randf(-1, 1), randf(-1, 1)
+		x,y = randf(-1, 1), randf(-1, 1)
 	end
 	x,y
 end
@@ -45,13 +45,6 @@ random_unit_vector() = normalize(random_in_unit_sphere())
 function random_in_hemisphere(normal) 
     in_unit_sphere = random_in_unit_sphere()
     dot(in_unit_sphere, normal) > 0.0 ? in_unit_sphere : -in_unit_sphere
-end
-
-function refract(uv, n, etai_over_etat) 
-    cos_theta = min(dot(-uv, n), 1.0)
-    r_out_perp = etai_over_etat * (uv + cos_theta*n)
-    r_out_parallel = -sqrt(abs(1.0 - magnitudesq(r_out_perp))) * n
-    r_out_perp + r_out_parallel
 end
 
 mutable struct Ray
@@ -96,20 +89,15 @@ struct Camera
 	Camera() = Camera(Point3(0,0,-1), Point3(0,0,0), Vec3(0,1,0), 40, 1, 0, 10)
 end
 
-
-abstract type Material end
 abstract type Hitable end
 
-
-include("Hitables.jl")
 include("Materials.jl")
+include("Hitables.jl")
 
 struct Scene
 	camera::Camera
 	hitables::Vector{Hitable}
-	rays::Vector{Ray}
-	hits::Vector{Hit}
-	Scene(cam) = new(cam, Vector{Hitable}(), [Ray() for _ in 1:Threads.nthreads()], [Hit() for _ in 1:Threads.nthreads()])
+	Scene(cam) = new(cam, Vector{Hitable}())
 end
 
 add!(s::Scene, h::Hitable) = push!(s.hitables, h)
@@ -117,7 +105,6 @@ add!(s::Scene, h::Hitable) = push!(s.hitables, h)
 function set_ray!(ray, origin, direction, time)
 	ray.origin = origin
 	ray.direction = direction
-	ray.udirection = normalize(direction)
 	ray.time = time
 	ray
 end
@@ -145,7 +132,7 @@ function ray_color!(rec::Hit, ray::Ray, scene::Scene, depth)::Tuple{Float64, Flo
 	end
 	hit = trace!(rec, scene, ray, 0.001, Inf)
 	if !hit
-		t = 0.5*(ray.udirection.y + 1.0)
+		t = 0.5*(normalize(ray.direction).y + 1.0)
 		t1m = 1.0 - t
 		return t1m + 0.5t, t1m + 0.7t, t1m + t
 	end
@@ -159,7 +146,7 @@ function ray_color!(rec::Hit, ray::Ray, scene::Scene, depth)::Tuple{Float64, Flo
 end
 
 val(rgb) = isnan(rgb) ? 0 : clamp(sqrt(rgb), 0, 1)
-rgb(r, g, b) = RGB(val(r), val(g), val(b))
+rgb(r, g, b) = RGB{N0f8}(val(r), val(g), val(b))
 
 function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	scancol = Vector{RGB}(undef, height)
