@@ -11,6 +11,7 @@ This branch now runs in 1m9s for TTFX
 ~60s for Second render
 
 ```
+$> julia -q --project=. -t 1
 julia> include("examples/RandomScene.jl")
 
 julia> @time main()
@@ -26,6 +27,7 @@ BenchmarkTools.Trial: 1 sample with 1 evaluation.
 With 40 threads ~15s for TTFX and 3.7s for a hot render
 
 ```
+$> julia -q --project=. -t 40
 julia> include("examples/RandomScene.jl")
 
 julia> @time main()
