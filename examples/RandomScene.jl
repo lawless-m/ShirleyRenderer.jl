@@ -27,12 +27,10 @@ function add_random_scene!(scene::Scene)
 	scene
 end
 
-function main(;filename="render.jpg", image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50)
-	image_height = round(Int, image_width / aspect_ratio)
-
+function main(;filename="render.jpg", width=1200, aspect=16/9, samples=10, depth=50)
 	@pipe Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, aspect_ratio, 0.1, 10.0)) |>
 		add_random_scene!(_) |>
-		render(_, image_width, image_height, samples_per_pixel, max_depth) |>
+		render(_, width, round(Int, width / aspect), samples, depth) |>
 		ShirleyRayTracer.save(filename, _)
 end
 
