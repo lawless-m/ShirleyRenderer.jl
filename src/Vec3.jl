@@ -4,9 +4,12 @@ const Vec3I = Tuple{Int64, Int64, Int64}
 const Point3 = Vec3
 const Color = Vec3
 
+export Vec3, Point3, Color, Grey, magnitude, magnitude², dot, cross, unit, randf, randv, near_zero
+
 Vec3(a,b,c) = Vec3((a,b,c))
 Base.zero(::Type{Vec3}) = Vec3(0,0,0)
 Color() = Vec3(rand() * rand(), rand() * rand(), rand() * rand())
+Grey(c::Float64) = Color(c,c,c)
 
 x(v::Vec3) = v[1]
 y(v::Vec3) = v[2]
@@ -52,4 +55,3 @@ near_zero(v) = v[1] < 1e-8 && v[2] < 1e-8 && v[3] < 1e-8
 randf(fmin, fmax) = fmin + (fmax-fmin)*rand()
 randv() = Vec3(rand(), rand(), rand())
 randv(l, h) = Vec3(randf(l,h), randf(l,h), randf(l,h))
-randu() = unit(randv(-1, 1))

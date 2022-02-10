@@ -5,9 +5,7 @@ using Images
 
 include("Vec3.jl")
 
-export Scene, Camera, Point3, Vec3, Color
-export trace_scanline, render
-export magnitude, add!, randf
+export Scene, Camera, add!, render, save
 
 function random_in_unit_disk()
 	x,y = randf(-1, 1), randf(-1, 1)

@@ -3,13 +3,13 @@ using Pipe
 
 function add_random_scene!(scene::Scene) 
 
-	add!(scene, Sphere(Point3(0,-1000,0), 1000, Lambertian(Color(0.5, 0.5, 0.5))))
+	add!(scene, Sphere(Point3(0,-1000,0), 1000, Lambertian(Grey(0.5))))
 
 	rand_material(p) = if p < 0.8 
 				Lambertian()
 			elseif p < 0.95
 				rf = randf(0.5, 1)
-				Metal(Color(rf, rf, rf), 0.5rand())
+				Metal(Grey(rf), 0.5rand())
 			else
 				Dielectric(1.5)
 			end
@@ -31,6 +31,6 @@ function main(;filename="render.jpg", width=1200, aspect=16/9, samples=10, depth
 	@pipe Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, aspect, 0.1, 10.0)) |>
 		add_random_scene!(_) |>
 		render(_, width, round(Int, width / aspect), samples, depth) |>
-		ShirleyRayTracer.save(filename, _)
+		save(filename, _)
 end
 
