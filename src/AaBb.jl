@@ -33,18 +33,19 @@ function surrounding_box(boxes::Vector{AaBb})
 try
     for box in boxes, p in (box.min, box.max)
         # min
-        x = p.x < x ? p.x : x
-        y = p.y < y ? p.y : y
-        z = p.z < z ? p.z : z
+        x = p[1] < x ? p[1] : x
+        y = p[2] < y ? p[2] : y
+        z = p[3] < z ? p[3] : z
         # max
-        X = p.x > X ? p.x : X
-        Y = p.y > y ? p.y : Y
-        Z = p.z > Z ? p.z : Z
+        X = p[1] > X ? p[1] : X
+        Y = p[2] > y ? p[2] : Y
+        Z = p[3] > Z ? p[3] : Z
     end
-catch
+catch e
 	for b in boxes
-	println(stderr, b)
+	    println(stderr, b)
 	end
+    println(e)
 	exit()
 end
     AaBb(Point3(x,y,z), Point3(X,Y,Z))

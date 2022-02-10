@@ -14,17 +14,17 @@ struct Checker <: Texture
     Checker(o::Color, e::Color) = Checker(SolidColor(o), SolidColor(e))
 end    
 
-value(c::Checker, u, v, p) = sin(10p.x) * sin(10p.y) * sin(10p.z) < 0 ? value(c.odd, u, v, p) : value(c.even, u, v, p)
+value(c::Checker, u, v, p) = sin(10p[1]) * sin(10p[2]) * sin(10p[3]) < 0 ? value(c.odd, u, v, p) : value(c.even, u, v, p)
 
 struct Noise <: Texture
-    noise
-    scale
+    noise::Perlin
+    scale::Float64
     Noise(s; point_count=256) = new(Perlin(point_count), s)
 end
 
 function value(n::Noise, u, v, p)::Color
-    v = 1 + sin(n.scale*p.z + 10*turb(n.noise, p))
-    Color(0.5v, 0.5v, 0.5v)
+    v = 1 + sin(n.scale*p[3] + 10*turb(n.noise, p))
+    Color(0.5v)
 end
 
 struct TextureMap <: Texture

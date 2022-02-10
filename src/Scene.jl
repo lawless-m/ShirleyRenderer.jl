@@ -5,6 +5,8 @@ struct Scene
 	Scene(cam, bg) = new(cam, Vector{Hitable}(), bg)
 end
 
+add!(s::Scene, h::Hitable) = push!(s.hitables, h)
+
 function trace!(rec::Hit, hitables::Vector{Hitable}, ray::Ray, t_min::Float64, t_max::Float64)
 	hit::Bool = false
 	for hitable in hitables
@@ -14,4 +16,3 @@ function trace!(rec::Hit, hitables::Vector{Hitable}, ray::Ray, t_min::Float64, t
 	end
 	hit
 end
-

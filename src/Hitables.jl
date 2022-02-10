@@ -7,7 +7,7 @@ mutable struct Hit
 	front_face::Bool
 	u::Float64
 	v::Float64
-	material::Int64
+	material::Material
 	Hit() = new(zero(Point3), zero(Vec3), 0, true, 0, 0)
 end
 
@@ -21,13 +21,13 @@ end
 struct Sphere <: Hitable
 	center::Point3
 	radius::Float64
-	material::Int64
+	material::Material
 end
 
 function trace_root(oc, ray, radius, t_min, t_max)::Float64
-	a = magnitudesq(ray.direction)
+	a = magnitude²(ray.direction)
 	half_b = dot(oc, ray.direction)
-	c = magnitudesq(oc) - radius^2
+	c = magnitude²(oc) - radius^2
 	discriminant = half_b^2 - a*c
 	if discriminant < 0
 		return -1.0
@@ -57,7 +57,7 @@ function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float
 	true
 end
 
-bounding_box(sphere::Sphere, time0, time1) = true, AaBb(sphere.center - Vec3(sphere.radius, sphere.radius, sphere.radius), sphere.center + Vec3(sphere.radius, sphere.radius, sphere.radius))
+bounding_box(sphere::Sphere, time0, time1) = true, AaBb(sphere.center - Vec3(sphere.radius), sphere.center + Vec3(sphere.radius))
 
 struct MovingSphere <: Hitable
 	center0::Point3
@@ -65,10 +65,10 @@ struct MovingSphere <: Hitable
 	time0::Float64
 	time1::Float64
 	radius::Float64
-	material::Int64
+	material::Material
 end
 
-center(ms::MovingSphere, time) = ms.center0 + ((time - ms.time0) / (ms.time1 - ms.time0))*(ms.center1 - ms.center0);
+center(ms::MovingSphere, time) = ms.center0 + ((time - ms.time0) / (ms.time1 - ms.time0))*(ms.center1 - ms.center0)
 
 function bounding_box(m::MovingSphere, time0, time1)
 	function aabb(t)
@@ -150,13 +150,13 @@ end
 bounding_box(r::XYRect, time0, time1) = true, AaBb(Point3(r.x0, r.y0, r.k-0.0001), Point3(r.x1, r.y1, r.k+0.001))
 
 function trace!(rec::Hit, xyr::XYRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
-	t = (xyr.k - ray.origin.z) / ray.direction.z
+	t = (xyr.k - ray.origin[2]) / ray.direction[2]
 	if t < t_min || t > t_max
 		return false
 	end
 
-	x = ray.origin.x + t*ray.direction.x
-	y = ray.origin.y + t*ray.direction.y
+	x = ray.origin[1] + t*ray.direction[1]
+	y = ray.origin[2] + t*ray.direction[2]
 	if x < xyr.x0 || x > xyr.x1 || y < xyr.y0 || y > xyr.y1
 		return false
 	end
@@ -183,13 +183,13 @@ end
 bounding_box(r::XZRect, time0, time1) = true, AaBb(Point3(r.x0, r.k-0.0001, r.z0), Point3(r.x1, r.k+0.0001, r.z1))
 
 function trace!(rec::Hit, xzr::XZRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
-	t = (xzr.k - ray.origin.y) / ray.direction.y
+	t = (xzr.k - ray.origin[2]) / ray.direction[2]
 	if t < t_min || t > t_max
 		return false
 	end
 
-	x = ray.origin.x + t*ray.direction.x
-	z = ray.origin.z + t*ray.direction.z
+	x = ray.origin[1] + t*ray.direction[1]
+	z = ray.origin[3] + t*ray.direction[3]
 	if x < xzr.x0 || x > xzr.x1 || z < xzr.z0 || z > xzr.z1
 		return false
 	end
@@ -216,13 +216,13 @@ end
 bounding_box(r::YZRect, time0, time1) = true, AaBb(Point3(r.k-0.0001, r.y0, r.z0), Point3(r.k+0.0001, r.y1, r.z1))
 
 function trace!(rec::Hit, yzr::YZRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
-	t = (yzr.k - ray.origin.x) / ray.direction.x
+	t = (yzr.k - ray.origin[1]) / ray.direction[1]
 	if t < t_min || t > t_max
 		return false
 	end
 
-	y = ray.origin.y + t*ray.direction.y
-	z = ray.origin.z + t*ray.direction.z
+	y = ray.origin[2] + t*ray.direction[2]
+	z = ray.origin[3] + t*ray.direction[3]
 	if y < yzr.y0 || y > yzr.y1 || z < yzr.z0 || z > yzr.z1
 		return false
 	end
@@ -243,14 +243,14 @@ struct Box <: Hitable
 	sides
 	function Box(p0, p1, m)
 		sides = Vector{Hitable}(undef, 6)
-		sides[1] = XYRect(p0.x, p1.x, p0.y, p1.y, p1.z, m)
-		sides[2] = XYRect(p0.x, p1.x, p0.y, p1.y, p0.z, m)
+		sides[1] = XYRect(p0[1], p1[1], p0[2], p1[2], p1[3], m)
+		sides[2] = XYRect(p0[1], p1[1], p0[2], p1[2], p0[3], m)
 
-		sides[3] = XZRect(p0.x, p1.x, p0.z, p1.z, p1.y, m)
-		sides[4] = XZRect(p0.x, p1.x, p0.z, p1.z, p0.y, m)
+		sides[3] = XZRect(p0[1], p1[1], p0[3], p1[2], p1[2], m)
+		sides[4] = XZRect(p0[1], p1[1], p0[3], p1[3], p0[2], m)
 
-		sides[5] = YZRect(p0.y, p1.y, p0.z, p1.z, p1.x, m)
-		sides[6] = YZRect(p0.y, p1.y, p0.z, p1.z, p0.x, m)
+		sides[5] = YZRect(p0[2], p1[2], p0[3], p1[3], p1[1], m)
+		sides[6] = YZRect(p0[2], p1[2], p0[3], p1[3], p0[1], m)
 		
 		new(p0, p1, sides)
 	end
@@ -274,9 +274,9 @@ struct RotateY <: Hitable
 		minx, miny, minz = Inf, Inf, Inf
 		maxx, maxy, maxz = -Inf, -Inf, -Inf
 		for i in 0:1, j in 0:1, k in 0:1
-			x = i * bbox.max.x + (1-i) * bbox.min.x
-			y = j * bbox.max.y + (1-j) * bbox.min.y
-			z = k * bbox.max.z + (1-k) * bbox.min.z
+			x = i * bbox.max[1] + (1-i) * bbox.min[1]
+			y = j * bbox.max[2] + (1-j) * bbox.min[2]
+			z = k * bbox.max[3] + (1-k) * bbox.min[3]
 
 			newx =  cos_theta * x + sin_theta * z
 			newz = -sin_theta * x + cos_theta * z
@@ -297,8 +297,8 @@ bounding_box(r::RotateY, time0, time1) = r.hasbox, r.bbox
 
 function trace!(rec::Hit, roty::RotateY, ray::Ray, t_min::Float64, t_max::Float64)::Bool
 	c,s = roty.cos_theta, roty.sin_theta
-	rot(pv, T)   = T(c * pv.x - s * pv.z, pv.y,  s * pv.x + c * pv.z)
-	unrot(pv, T) = T(c * pv.x + s * pv.z, pv.y, -s * pv.x + c * pv.z)
+	rot(pv, T)   = T(c * pv[1] - s * pv[3], pv[2],  s * pv[1] + c * pv[3])
+	unrot(pv, T) = T(c * pv[1] + s * pv[3], pv[2], -s * pv[1] + c * pv[3])
 
 	rotated_ray = Ray(rot(ray.origin, Point3), rot(ray.direction, Vec3), ray.time)
 	if !trace!(rec, roty.hitable, rotated_ray, t_min, t_max)
@@ -337,10 +337,10 @@ end
 
 
 struct ConstantMedium <: Hitable
-	boundary
-	phase_function_id
-	neg_inv_density
-	ConstantMedium(b, d, material_id) = new(b, material_id, -1/d)
+	boundary::Hitable
+	phase_function::Material
+	neg_inv_density::Float64
+	ConstantMedium(b, d, material) = new(b, material, -1/d)
 end
 
 bounding_box(cm::ConstantMedium, time0, time1) = bounding_box(cm.boundary)
@@ -374,7 +374,7 @@ function trace!(rec::Hit, cm::ConstantMedium, ray::Ray, t_min::Float64, t_max::F
 
 	rec.normal = Vec3(1,0,0)
 	rec.front_face = true
-	rec.material = cm.phase_function_id
+	rec.material = cm.phase_function
 
 	true
 end

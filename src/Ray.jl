@@ -26,19 +26,17 @@ end
 
 function ray_color!(rec, ray, scene, depth)::Tuple{Float64, Float64, Float64}
 	if depth <= 0 
-        return 0,0,0
+        return Color(0,0,0)
 	end
 
 	hit::Bool = trace!(rec, scene.hitables, ray, 0.001, Inf)
 	if !hit
-		return scene.background.r, scene.background.g, scene.background.b
+		return scene.background
 	end
-	m = scene.materials[rec.material]
-	emit = emitted(m, rec.u, rec.v, rec.p)
-	scattered::Bool, attenuation = scatter!(m, ray, rec)
+	emit = emitted(rec.material, rec.u, rec.v, rec.p)
+	scattered::Bool, attenuation = scatter!(rec.material, ray, rec)
 	if !scattered
-		return emit.r, emit.g, emit.b
+		return emit
 	end
-	r::Float64, g::Float64, b::Float64 = ray_color!(rec, ray, scene, depth-1)
-	emit.r + attenuation.r * r, emit.g + attenuation.g * g, emit.b + attenuation.b * b
+	emit + attenuation * ray_color!(rec, ray, scene, depth-1)
 end

@@ -7,9 +7,12 @@ const Color = Vec3
 export Vec3, Point3, Color, Grey, magnitude, magnitude², dot, cross, unit, randf, randv, near_zero
 
 Vec3(a,b,c) = Vec3((a,b,c))
+Vec3(f::Float64) = Vec3(f,f,f)
 Base.zero(::Type{Vec3}) = Vec3(0,0,0)
 Color() = Vec3(rand() * rand(), rand() * rand(), rand() * rand())
+Color(rgb::RGB{N0f8}) = Vec3(rgb.r, rgb.g, rgb.b)
 Grey(c::Float64) = Color(c,c,c)
+Grey(c::Int) = Color(Float64(c))
 
 x(v::Vec3) = v[1]
 y(v::Vec3) = v[2]
@@ -55,3 +58,26 @@ near_zero(v) = v[1] < 1e-8 && v[2] < 1e-8 && v[3] < 1e-8
 randf(fmin, fmax) = fmin + (fmax-fmin)*rand()
 randv() = Vec3(rand(), rand(), rand())
 randv(l, h) = Vec3(randf(l,h), randf(l,h), randf(l,h))
+
+function random_in_unit_disk()
+	x,y = randf(-1, 1), randf(-1, 1)
+	while magnitude²(x,y) >= 1
+     	x,y = randf(-1, 1), randf(-1, 1)
+	end
+	x,y
+end
+
+function random_in_unit_sphere() 
+	v = randv(-1,1)
+	while magnitude²(v) >= 1
+		v = randv(-1,1)
+	end
+	v
+end
+
+random_unit_vector() = unit(random_in_unit_sphere())
+
+function random_in_hemisphere(normal) 
+    in_unit_sphere = random_in_unit_sphere()
+    dot(in_unit_sphere, normal) > 0.0 ? in_unit_sphere : -in_unit_sphere
+end

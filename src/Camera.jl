@@ -14,8 +14,8 @@ struct Camera
 		viewport_height = 2.0 * tan(deg2rad(vfov)/2)
 		viewport_width = aspect_ratio * viewport_height
 
-		w = normalize(lookfrom - lookat)
-		u = normalize(cross(vup, w))
+		w = unit(lookfrom - lookat)
+		u = unit(cross(vup, w))
 		v = cross(w, u)
 
 		origin = lookfrom

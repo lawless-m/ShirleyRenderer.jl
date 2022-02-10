@@ -6,16 +6,16 @@ struct Perlin
     perm_x
     perm_y
     perm_z
-    Perlin(point_count=256) = new(point_count, [normalize(Vec3(randf(-1,1), randf(-1,1), randf(-1,1))) for _ in 1:point_count], shuffle(1:point_count), shuffle(1:point_count), shuffle(1:point_count))
+    Perlin(point_count=256) = new(point_count, [unit(Vec3()) for _ in 1:point_count], shuffle(1:point_count), shuffle(1:point_count), shuffle(1:point_count))
 end
 
 function noise(p::Perlin, at::Point3)
-    i = floor(Int, at.x)
-    j = floor(Int, at.y)
-    k = floor(Int, at.z)
-    u = at.x - i
-    v = at.y - j
-    w = at.z - k
+    i = floor(Int, at[1])
+    j = floor(Int, at[2])
+    k = floor(Int, at[3])
+    u = at[1] - i
+    v = at[2] - j
+    w = at[3] - k
     c = Array{Vec3}(undef, 2,2,2)
 
     clmp(n) = min(max(n, 1), 256)
