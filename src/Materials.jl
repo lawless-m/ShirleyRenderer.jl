@@ -36,7 +36,7 @@ function scatter!(material, ray, rec)
 	end
 
 	if material.type == _Metal
-		reflected = reflect(normalize(ray.direction), rec.normal)
+		reflected = reflect(unit(ray.direction), rec.normal)
 		direction = reflected + material.fuzz * random_in_unit_sphere()
 		if dot(direction, rec.normal) > 0 
 			set_ray!(ray, rec.p, direction, rec.t)
@@ -55,7 +55,7 @@ function scatter!(material, ray, rec)
 
 		refraction_ratio = rec.front_face ? (1.0/material.ir) : material.ir
 
-		udirection = normalize(ray.direction)
+		udirection = unit(ray.direction)
 
 		cos_theta = min(dot(-udirection, rec.normal), 1.0)
 		sin_theta = sqrt(1.0 - cos_theta^2)

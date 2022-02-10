@@ -1,28 +1,17 @@
 
 module ShirleyRayTracer
 
-using StaticArrays
-using LinearAlgebra
 using Images
 
-const Vec3 = SVector{3, Float64}
-const Point3 = SVector{3, Float64}
-const Color = RGB{Float64}
+
+include("Vec3.jl")
+
+const Color = Vec3
 
 export Scene, Camera, Point3, Vec3, Color
 export trace_scanline, render
 export magnitude, add!, randf
 
-magnitude(x,y) = sqrt(x^2 + y^2)
-magnitude(x,y,z) = sqrt(x^2 + y^2 + z^2)
-magnitude(v) = magnitude(v...)
-
-magnitudesq(x,y) = x^2 + y^2
-magnitudesq(x,y,z) = x^2 + y^2 + z^2
-magnitudesq(v) = magnitudesq(v...)
-
-randf(fmin, fmax) = fmin + (fmax-fmin)*rand()
-near_zero(v) = v.x < 1e-8 && v.y < 1e-8 && v.z < 1e-8
 
 function random_in_unit_disk()
 	x,y = randf(-1, 1), randf(-1, 1)
@@ -37,10 +26,10 @@ function random_in_unit_sphere()
 	while magnitudesq(x,y,z) >= 1
 		x,y,z = randf(-1,1), randf(-1,1), randf(-1,1)
 	end
-	Point3(x,y,z)
+	x,y,z
 end
 
-random_unit_vector() = normalize(random_in_unit_sphere())
+random_unit_vector() = unit(random_in_unit_sphere())
 
 function random_in_hemisphere(normal) 
     in_unit_sphere = random_in_unit_sphere()
@@ -73,8 +62,8 @@ struct Camera
 		viewport_height = 2.0 * tan(deg2rad(vfov)/2)
 		viewport_width = aspect_ratio * viewport_height
 
-		w = normalize(lookfrom - lookat)
-		u = normalize(cross(vup, w))
+		w = unit(lookfrom - lookat)
+		u = unit(cross(vup, w))
 		v = cross(w, u)
 
 		origin = lookfrom
@@ -127,28 +116,27 @@ end
 
 function ray_color!(rec::Hit, ray::Ray, scene::Scene, depth)::Tuple{Float64, Float64, Float64}
 	if depth <= 0 
-        	return 0,0,0
+        	return Point3(0,0,0)
 	end
 	hit = trace!(rec, scene, ray, 0.001, Inf)
 	if !hit
-		t = 0.5*(normalize(ray.direction).y + 1.0)
+		t = 0.5*(unit(ray.direction)[2] + 1.0)
 		t1m = 1.0 - t
 		return t1m + 0.5t, t1m + 0.7t, t1m + t
 	end
 	
-	scattered, a = scatter!(rec.material, ray, rec)
+	scattered, attenuation = scatter!(rec.material, ray, rec)
 	if !scattered
-		return 0,0,0
+		return Point3(0,0,0)
 	end
-	r,g,b = ray_color!(rec, ray, scene, depth-1)
-	a.r * r, a.g * g, a.b * b
+	attenuation * ray_color!(rec, ray, scene, depth-1)
 end
 
 val(rgb) = isnan(rgb) ? 0 : clamp(sqrt(rgb), 0, 1)
 rgb(r, g, b) = RGB{N0f8}(val(r), val(g), val(b))
 
 function trace_scancol(scene, x, nsamples, width, height, max_depth)
-	scancol = Vector{RGB}(undef, height)
+	scancol = Vector{RGB{N0f8}}(undef, height)
 	rs = Vector{Float64}(undef, nsamples)
 	gs = Vector{Float64}(undef, nsamples)
 	bs = Vector{Float64}(undef, nsamples)
@@ -167,7 +155,7 @@ function trace_scancol(scene, x, nsamples, width, height, max_depth)
 end
 
 function render(scene::Scene, width, height, nsamples=10, max_depth=50)
-	image = Array{RGB, 2}(undef, height, width)
+	image = Array{RGB{N0f8}, 2}(undef, height, width)
 	Threads.@threads for x in 1:width
 		@inbounds image[:, x] = trace_scancol(scene, x, nsamples, width, height, max_depth)
 	end

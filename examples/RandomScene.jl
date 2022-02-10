@@ -1,4 +1,5 @@
 using ShirleyRayTracer
+using Pipe
 
 function add_random_scene!(scene::Scene) 
 
@@ -23,13 +24,15 @@ function add_random_scene!(scene::Scene)
 	add!(scene, Sphere(Point3(0, 1, 0), 1.0, Dielectric(1.5)))
 	add!(scene, Sphere(Point3(-4, 1, 0), 1.0, Lambertian(Color(0.4,0.2,0.1))))
 	add!(scene, Sphere(Point3(4, 1, 0), 1.0, Metal(Color(0.7,0.6,0.5), 0.0)))
+	scene
 end
 
 function main(;filename="render.jpg", image_width=1200, aspect_ratio=16/9, samples_per_pixel=10, max_depth=50)
 	image_height = round(Int, image_width / aspect_ratio)
-	world = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, aspect_ratio, 0.1, 10.0))
-	add_random_scene!(world)
-	image = render(world, image_width, image_height, samples_per_pixel, max_depth)
-	ShirleyRayTracer.save(filename, image)
+
+	@pipe Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, aspect_ratio, 0.1, 10.0)) |>
+		add_random_scene!(_) |>
+		render(_, image_width, image_height, samples_per_pixel, max_depth) |>
+		ShirleyRayTracer.save(filename, _)
 end
 
