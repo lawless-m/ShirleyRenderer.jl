@@ -26,9 +26,9 @@ export Sphere, Hit
 
 function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Bool
 	oc = ray.origin - sphere.center
-	a = magnitudesq(ray.direction)
+	a = magnitude²(ray.direction)
 	half_b = dot(oc, ray.direction)
-	c = magnitudesq(oc) - sphere.radius^2
+	c = magnitude²(oc) - sphere.radius^2
 	discriminant = half_b^2 - a*c
 	if discriminant < 0
 		return false

@@ -6,8 +6,13 @@ reflect(v, n) =  v - 2dot(v,n)*n
 function refract(uv, n, etai_over_etat) 
     cos_theta = min(dot(-uv, n), 1.0)
     r_out_perp = etai_over_etat * (uv + cos_theta*n)
-    r_out_parallel = -sqrt(abs(1.0 - magnitudesq(r_out_perp))) * n
+    r_out_parallel = -sqrt(abs(1.0 - magnitude²(r_out_perp))) * n
     r_out_perp + r_out_parallel
+end
+
+function reflectance(cosine, ratio)
+	r = ((1-ratio) / (1+ratio))^2
+	r + (1-r)*(1 - cosine)^5
 end
 
 @enum MaterialType _Lambertian _Metal _Dielectric _Isomorphic
@@ -20,7 +25,7 @@ struct Material
 end
 
 Lambertian(c::Color) = Material(_Lambertian, c, 0, 0)
-Lambertian() = Material(_Lambertian, Color(rand()*rand(), rand()*rand(), rand()*rand()), 0, 0)
+Lambertian() = Lambertian(Color())
 Metal(c, f) = Material(_Metal, c, f, 0)
 Dielectric(ir) = Material(_Dielectric, zero(Color), 0, ir)
 
@@ -48,15 +53,8 @@ function scatter!(material, ray, rec)
 
 	if material.type == _Dielectric
 
-		function reflectance(cosine, ratio)
-			r = ((1-ratio) / (1+ratio))^2
-			r + (1-r)*(1 - cosine)^5
-		end
-
 		refraction_ratio = rec.front_face ? (1.0/material.ir) : material.ir
-
 		udirection = unit(ray.direction)
-
 		cos_theta = min(dot(-udirection, rec.normal), 1.0)
 		sin_theta = sqrt(1.0 - cos_theta^2)
 		cannot_refract = refraction_ratio * sin_theta > 1.0

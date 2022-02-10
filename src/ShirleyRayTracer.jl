@@ -3,30 +3,26 @@ module ShirleyRayTracer
 
 using Images
 
-
 include("Vec3.jl")
-
-const Color = Vec3
 
 export Scene, Camera, Point3, Vec3, Color
 export trace_scanline, render
 export magnitude, add!, randf
 
-
 function random_in_unit_disk()
 	x,y = randf(-1, 1), randf(-1, 1)
-	while magnitudesq(x,y) >= 1
+	while magnitude²(x,y) >= 1
 		x,y = randf(-1, 1), randf(-1, 1)
 	end
 	x,y
 end
 
 function random_in_unit_sphere() 
-	x,y,z = randf(-1,1), randf(-1,1), randf(-1,1)
-	while magnitudesq(x,y,z) >= 1
-		x,y,z = randf(-1,1), randf(-1,1), randf(-1,1)
+	v = randv(-1,1)
+	while magnitude²(v) >= 1
+		v = randv(-1,1)
 	end
-	x,y,z
+	v
 end
 
 random_unit_vector() = unit(random_in_unit_sphere())
@@ -116,40 +112,35 @@ end
 
 function ray_color!(rec::Hit, ray::Ray, scene::Scene, depth)::Tuple{Float64, Float64, Float64}
 	if depth <= 0 
-        	return Point3(0,0,0)
+        	return zero(Color)
 	end
 	hit = trace!(rec, scene, ray, 0.001, Inf)
 	if !hit
 		t = 0.5*(unit(ray.direction)[2] + 1.0)
-		t1m = 1.0 - t
-		return t1m + 0.5t, t1m + 0.7t, t1m + t
+		return (1.0 - t) + t * Color(0.5, 0.7, 1.0)
 	end
 	
 	scattered, attenuation = scatter!(rec.material, ray, rec)
 	if !scattered
-		return Point3(0,0,0)
+		return Color(0,0,0)
 	end
 	attenuation * ray_color!(rec, ray, scene, depth-1)
 end
 
 val(rgb) = isnan(rgb) ? 0 : clamp(sqrt(rgb), 0, 1)
-rgb(r, g, b) = RGB{N0f8}(val(r), val(g), val(b))
+rgbf8(rgb) = RGB{N0f8}(val(rgb[1]), val(rgb[2]), val(rgb[3]))
 
 function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	scancol = Vector{RGB{N0f8}}(undef, height)
-	rs = Vector{Float64}(undef, nsamples)
-	gs = Vector{Float64}(undef, nsamples)
-	bs = Vector{Float64}(undef, nsamples)
-
 	ray = Ray()
 	rec = Hit()
-
 	@inbounds for y in 1:height
+		rgb = zero(Color)
 		@simd for i in 1:nsamples
 			reset_ray!(ray, scene, (x + rand()) / width, (y + rand()) / height)
-			rs[i], gs[i], bs[i] = ray_color!(rec, ray, scene, max_depth)
+			rgb += ray_color!(rec, ray, scene, max_depth)
 		end
-		scancol[height-y+1] = rgb(sum(rs)/nsamples, sum(gs)/nsamples, sum(bs)/nsamples)
+		scancol[height-y+1] = rgbf8(rgb / nsamples)
 	end
 	scancol
 end

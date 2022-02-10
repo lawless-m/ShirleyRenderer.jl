@@ -18,13 +18,11 @@ function rc_warn()
     
     scene, rec, ray = setup()
 
-    @time ShirleyRayTracer.reset_ray!(ray, scene, 0.5, 0.5)
-   # @time ShirleyRayTracer.ray_color!(rec, ray, scene, 20)
-    #@time ShirleyRayTracer.trace!(rec, scene.hitables, ray, 0.001, Inf)
-    @time ShirleyRayTracer.trace!(rec, scene.hitables[3], ray, 0.001, Inf)
-    println(rec)
-    @time ShirleyRayTracer.emitted(rec.material, rec.u, rec.v, rec.p)
-    #@time ShirleyRayTracer.scatter!(rec.material, ray, rec)
+    @code_warntype ShirleyRayTracer.reset_ray!(ray, scene, 0.5, 0.5)
+    @code_warntype ShirleyRayTracer.ray_color!(rec, ray, scene, 20)
+    @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables, ray, 0.001, Inf)
+    @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables[1], ray, 0.001, Inf)
+    @code_warntype ShirleyRayTracer.scatter!(rec.material, ray, rec)
 
 end
 
