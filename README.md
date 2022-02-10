@@ -6,7 +6,7 @@ https://github.com/RayTracing/raytracing.github.io
 
 C++ runs in ~50s
 
-This branch now runs in ~70s for TTFX
+This branch now runs in ~70s for TTFX, 60s if Package.Compile is used
 
 ~60s for Second render
 
