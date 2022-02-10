@@ -12,14 +12,23 @@ function reflectance(cosine, ratio)
 	r = ((1-ratio) / (1+ratio))^2
 	r + (1-r)*(1 - cosine)^5
 end
+#==
+struct Material
+	type::MaterialType
+	albedo::Color
+	texture::Texture
+	fuzz::Float64
+	ir::Float64
+end
+==#
 
 Lambertian(t::Texture) = Material(_Lambertian, zero(Color), t, 0, 0)
 Lambertian(c::Color) = Lambertian(SolidColor(c))
 Lambertian() = Lambertian(Color())
 
-Metal(c::Color, fuzz::Float64) = Material(_Metal, c, fuzz, 0, 0)
+Metal(c::Color, fuzz::Float64) = Material(_Metal, c, Texture(), fuzz, 0)
 
-Dielectric(ir::Float64) = Material(_Dielectric, zero(Color), 0, 0, ir)
+Dielectric(ir::Float64) = Material(_Dielectric, zero(Color), Texture(), 0, ir)
 
 DiffuseLight(t::Texture) = Material(_DiffuseLight, zero(Color), t, 0, 0)
 DiffuseLight(c::Color) = DiffuseLight(SolidColor(c))

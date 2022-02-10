@@ -1,6 +1,7 @@
 using ShirleyRayTracer
 using BenchmarkTools
 using Profile
+using Debugger
 
 function setup()
     scene = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Color(0.5,0.5,0.5))
@@ -20,6 +21,7 @@ function rc_warn()
     @code_warntype ShirleyRayTracer.reset_ray!(ray, scene, 0.5, 0.5)
     @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables, ray, 0.001, Inf)
     @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables[3], ray, 0.001, Inf)
+    rec.material = scene.hitables[3].material
     @code_warntype ShirleyRayTracer.ray_color!(rec, ray, scene, 20)
     @code_warntype ShirleyRayTracer.emitted(rec.material, rec.u, rec.v, rec.p)
     @code_warntype ShirleyRayTracer.scatter!(rec.material, ray, rec)
@@ -29,4 +31,19 @@ end
 function prof()
     scene, rec, ray = setup()
     @profile trace_scancol(scene, 400, 1, 800, 600, 5)
+end
+
+function bp_code()
+    
+    scene, rec, ray = setup()
+
+    ShirleyRayTracer.reset_ray!(ray, scene, 0.5, 0.5)
+    ShirleyRayTracer.trace!(rec, scene.hitables, ray, 0.001, Inf)
+    ShirleyRayTracer.trace!(rec, scene.hitables[3], ray, 0.001, Inf)
+    rec.material = scene.hitables[3].material
+    @bp
+    ShirleyRayTracer.ray_color!(rec, ray, scene, 20)
+    ShirleyRayTracer.emitted(rec.material, rec.u, rec.v, rec.p)
+    ShirleyRayTracer.scatter!(rec.material, ray, rec)
+
 end

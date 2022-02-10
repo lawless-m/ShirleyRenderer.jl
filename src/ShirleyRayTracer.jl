@@ -12,22 +12,23 @@ include("Ray.jl")
 include("Camera.jl")
 
 abstract type Hitable end
-abstract type Texture end
 
 @enum MaterialType _Lambertian _Metal _Dielectric _DiffuseLight _Isotropic
+@enum Textures _Zero _SolidColor _Checker _Noise _TextureMap
+
+include("Perlin.jl")
+include("Textures.jl")
 
 struct Material
 	type::MaterialType
-	albedo
-	texture
+	albedo::Color
+	texture::Texture
 	fuzz::Float64
 	ir::Float64
 end
 
 include("AaBb.jl")
 include("Hitables.jl")
-include("Perlin.jl")
-include("Textures.jl")
 include("Materials.jl")
 include("Scene.jl")
 
@@ -52,7 +53,7 @@ function trace_scancol(scene, x, nsamples, width, height, max_depth)
 end
 
 function render(scene::Scene, width, height, nsamples=10, max_depth=50)
-	image = Array{RGB, 2}(undef, height, width)
+	image = Array{RGB{N0f8}, 2}(undef, height, width)
 	Threads.@threads for x in 1:width
 		@inbounds image[:, x] = trace_scancol(scene, x, nsamples, width, height, max_depth)
 	end

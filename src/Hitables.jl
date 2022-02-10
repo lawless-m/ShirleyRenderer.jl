@@ -300,13 +300,17 @@ function trace!(rec::Hit, roty::RotateY, ray::Ray, t_min::Float64, t_max::Float6
 	rot(pv, T)   = T(c * pv[1] - s * pv[3], pv[2],  s * pv[1] + c * pv[3])
 	unrot(pv, T) = T(c * pv[1] + s * pv[3], pv[2], -s * pv[1] + c * pv[3])
 
-	rotated_ray = Ray(rot(ray.origin, Point3), rot(ray.direction, Vec3), ray.time)
-	if !trace!(rec, roty.hitable, rotated_ray, t_min, t_max)
+	o = ray.origin
+	d = ray.direction
+	set_ray!(ray, rot(ray.origin, Point3), rot(ray.direction, Vec3), ray.time)
+	if !trace!(rec, roty.hitable, ray, t_min, t_max)
+		set_ray!(ray, o, d, ray.time)
 		return false
 	end
 
 	rec.p = unrot(rec.p, Point3)
-	set_face_normal!(rec, rotated_ray, unrot(rec.normal, Vec3))
+	set_face_normal!(rec, ray, unrot(rec.normal, Vec3))
+	set_ray!(ray, o, d, ray.time)
 	true
 end
 
@@ -316,13 +320,16 @@ struct Translate <: Hitable
 end
 
 function trace!(rec::Hit, t::Translate, ray::Ray, t_min::Float64, t_max::Float64)::Bool
-	moved_ray = Ray(ray.origin - t.offset, ray.direction, ray.time)
-	if !trace!(rec, t.hitable, moved_ray, t_min, t_max)
+	o = ray.origin
+	set_ray!(ray, ray.origin - t.offset, ray.direction, ray.time)
+	if !trace!(rec, t.hitable, ray, t_min, t_max)
+		set_ray!(ray, o, ray.direction, ray.time)
 		return false
 	end
 
 	rec.p += t.offset
-	set_face_normal!(rec, moved_ray, rec.normal)
+	set_face_normal!(rec, ray, rec.normal)
+	set_ray!(ray, o, ray.direction, ray.time)
 	true
 end
 

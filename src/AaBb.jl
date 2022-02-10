@@ -15,7 +15,7 @@ function trace!(rec, aabb::AaBb, ray, t_min, t_max)
     true
 end
 
-minmax_xyz(aabb) = aabb.max.x - aabb.min.x, aabb.max.y - aabb.min.y, aabb.max.z - aabb.min.z
+minmax_xyz(aabb) = aabb.max[1] - aabb.min[1], aabb.max[2] - aabb.min[2], aabb.max[3] - aabb.min[3]
     
 function area(aabb::AaBb)
     x,y,z = minmax_xyz(aabb)

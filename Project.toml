@@ -4,6 +4,8 @@ authors = ["Matt Lawless"]
 version = "0.1.0"
 
 [deps]
+Cthulhu = "f68482b8-f384-11e8-15f7-abe071a5a75f"
+Debugger = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Pipe = "b98c9c47-44ae-5843-9183-064241ee97a0"

@@ -6,7 +6,8 @@ struct Perlin
     perm_x
     perm_y
     perm_z
-    Perlin(point_count=256) = new(point_count, [unit(Vec3()) for _ in 1:point_count], shuffle(1:point_count), shuffle(1:point_count), shuffle(1:point_count))
+    Perlin() = new()
+    Perlin(point_count) = new(point_count, [unit(Vec3()) for _ in 1:point_count], shuffle(1:point_count), shuffle(1:point_count), shuffle(1:point_count))
 end
 
 function noise(p::Perlin, at::Point3)
