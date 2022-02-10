@@ -6,11 +6,18 @@ https://github.com/RayTracing/raytracing.github.io
 
 C++ runs in ~50s
 
-This branch now runs in 1m9s for TTFX
+This branch now runs in ~70s for TTFX
 
 ~60s for Second render
 
 ```
+matt@pox:~/GitHub/ShirleyRenderer.jl$ time julia --project=. -t 1 -L examples/RandomScene.jl -e "@time main()"
+ 64.737416 seconds (7.87 M allocations: 311.747 MiB, 0.22% gc time, 2.57% compilation time)
+
+real    1m12.943s
+user    1m11.591s
+sys     0m1.083s
+
 $> julia -q --project=. -t 1
 julia> include("examples/RandomScene.jl")
 
@@ -27,6 +34,13 @@ BenchmarkTools.Trial: 1 sample with 1 evaluation.
 With 40 threads ~15s for TTFX and 3.7s for a hot render
 
 ```
+matt@pox:~/GitHub/ShirleyRenderer.jl$ time julia --project=. -t 40 -L examples/RandomScene.jl -e "@time main()"
+  5.902854 seconds (7.88 M allocations: 311.993 MiB, 1.76% gc time, 33.88% compilation time)
+
+real    0m14.219s
+user    2m57.157s
+sys     0m1.023s
+
 $> julia -q --project=. -t 40
 julia> include("examples/RandomScene.jl")
 
