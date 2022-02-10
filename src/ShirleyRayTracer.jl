@@ -50,9 +50,8 @@ end
 mutable struct Ray
 	origin::Point3
 	direction::Vec3
-	udirection::Vec3
 	time::Float64
-	Ray(o, d, t) = new(o, d, normalize(d), t)
+	Ray(o, d, t) = new(o, d, t)
 	Ray(o, d) = Ray(o, d, 0)
 	Ray() = Ray(zero(Point3), zero(Vec3))
 end
