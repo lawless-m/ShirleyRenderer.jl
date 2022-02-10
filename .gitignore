@@ -26,3 +26,4 @@ Manifest.toml
 *.jpg
 src/*.ppm
 src/*.jpg
+project.so
