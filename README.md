@@ -60,3 +60,29 @@ BenchmarkTools.Trial: 2 samples with 1 evaluation.
  Memory estimate: 61.99 MiB, allocs estimate: 3247946.
 
 ```
+
+Now if we add PackageCompiler to the mix, TTFX for 1 thread is 67s and 9s for 40 threads + 4m50s for the compile !
+
+```
+matt:~/GitHub/ShirleyRenderer.jl$ julia -q
+julia> using Pkg
+julia> using PackageCompiler
+julia> Pkg.activate(".")
+  Activating project at `~/GitHub/ShirleyRenderer.jl`
+julia> create_sysimage(; sysimage_path="project.so")
+✔ [04m:47s] PackageCompiler: compiling incremental system image
+^D
+matt:~/GitHub/ShirleyRenderer.jl$ time julia --project=. -J project.so -L examples/RandomScene.jl -e "@time main()"
+  5.514397 seconds (7.02 M allocations: 263.926 MiB, 5.13% gc time, 26.16% compilation time)
+
+real    0m8.869s
+user    2m34.450s
+sys     0m0.856s
+
+matt:~/GitHub/ShirleyRenderer.jl$ time jp -J project.so -t 1 -L examples/RandomScene.jl -e "@time main()"
+ 63.488940 seconds (7.02 M allocations: 263.879 MiB, 0.33% gc time, 2.06% compilation time)
+
+real    1m7.080s
+user    1m6.060s
+sys     0m0.751s
+```
