@@ -16,27 +16,25 @@ end
 struct Material
 	type::MaterialType
 	albedo::Color
-	texture::Texture
+	texture::Int64
 	fuzz::Float64
 	ir::Float64
 end
 ==#
 
-Lambertian(t::Texture) = Material(_Lambertian, zero(Color), t, 0, 0)
-Lambertian(c::Color) = Lambertian(SolidColor(c))
-Lambertian() = Lambertian(Color())
+Lambertian(tex::Int64) = Material(_Lambertian, zero(Color), tex, 0, 0)
 
-Metal(c::Color, fuzz::Float64) = Material(_Metal, c, Texture(), fuzz, 0)
+Metal(c::Color, fuzz::Float64) = Material(_Metal, c, 0, fuzz, 0)
 
-Dielectric(ir::Float64) = Material(_Dielectric, zero(Color), Texture(), 0, ir)
+Dielectric(ir::Float64) = Material(_Dielectric, zero(Color), 0, 0, ir)
 
-DiffuseLight(t::Texture) = Material(_DiffuseLight, zero(Color), t, 0, 0)
-DiffuseLight(c::Color) = DiffuseLight(SolidColor(c))
+DiffuseLight(tex::Int64) = Material(_DiffuseLight, zero(Color), tex, 0, 0)
 
-Isotropic(t::Texture) = Material(_Isotropic, zero(Color), t, 0, 0)
-Isotropic(c::Color) = Isotropic(SolidColor(c))
+Isotropic(tex::Int64) = Material(_Isotropic, zero(Color), tex, 0, 0)
 
-function scatter!(material, ray, rec)::Tuple{Bool, Color}
+function scatter!(scene, ray, rec)::Tuple{Bool, Color}
+	
+	material = scene.materials[rec.material]
 
 	if material.type == _Lambertian
 		direction = rec.normal + random_unit_vector()
@@ -44,7 +42,7 @@ function scatter!(material, ray, rec)::Tuple{Bool, Color}
 			direction = rec.normal
 		end
 		set_ray!(ray, rec.p, direction, rec.t)
-		return true, value(material.texture, rec.u, rec.v, rec.p)
+		return true, value(scene, material.texture, rec.u, rec.v, rec.p)
 	end
 
 	if material.type == _Metal
@@ -76,7 +74,7 @@ function scatter!(material, ray, rec)::Tuple{Bool, Color}
 
 	if material.type == _Isotropic
 		set_ray!(ray, rec.p, random_in_unit_sphere(), rec.t)
-    	return true, value(material.texture, rec.u, rec.v, rec.p)
+    		return true, value(scene, material.texture, rec.u, rec.v, rec.p)
 	end
 	
 	# _DiffuseLight
@@ -84,10 +82,12 @@ function scatter!(material, ray, rec)::Tuple{Bool, Color}
 end
 
 
-function emitted(material::Material, u::Float64, v::Float64, p::Point3)::Color
+function emitted(scene, rec, u::Float64, v::Float64, p::Point3)::Color
 	
+	material = scene.materials[rec.material]
+
 	if material.type == _DiffuseLight
-		return value(material.texture, u, v, p)
+		return value(scene, material.texture, u, v, p)
 	end
 
 	return zero(Color)

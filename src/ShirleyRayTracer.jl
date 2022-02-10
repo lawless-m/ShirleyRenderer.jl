@@ -22,7 +22,7 @@ include("Textures.jl")
 struct Material
 	type::MaterialType
 	albedo::Color
-	texture::Texture
+	texture::Int64
 	fuzz::Float64
 	ir::Float64
 end
@@ -44,8 +44,8 @@ function trace_scancol(scene, x, nsamples, width, height, max_depth)
 	@inbounds for y in 1:height
 		rgb = zero(Color)
 		@simd for i in 1:nsamples
-			reset_ray!(ray, scene, (x + rand()) / width, (y + rand()) / height)
-			rgb += ray_color!(rec, ray, scene, max_depth)
+			reset_ray!(scene, ray, (x + rand()) / width, (y + rand()) / height)
+			rgb += ray_color!(scene, ray, rec, max_depth)
 		end
 		scancol[height-y+1] = rgbf8(rgb / nsamples)
 	end

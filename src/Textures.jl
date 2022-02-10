@@ -5,47 +5,47 @@ struct Texture
     type::Textures
     color::Color
     scale::Float64
-    odd
-    even
+    odd::Int64
+    even::Int64
     noise::Perlin
     rgb
-    Texture() = new(_Zero, zero(Color), 0.)
-    Texture(t, c, s, o, e, n, r) = new(t, c, s, o, e, n, r)
 end
 
 noRGB() = Array{RGB{N0f8}, 2}(undef, 1,1)
 
-SolidColor(c) = Texture(_SolidColor, c, 0., Texture(), Texture(), Perlin(), noRGB())
+SolidColor(c) = Texture(_SolidColor, c, 0., 0, 0, Perlin(), noRGB())
 
-Checker(o::Texture, e::Texture) = Texture(_Checker, zero(Color), 0., o, e, Perlin(), noRGB())
-Checker(o::Color, e::Color) = Checker(SolidColor(o), SolidColor(e))
+Checker(o::Int64, e::Int64) = Texture(_Checker, zero(Color), 0., o, e, Perlin(), noRGB())
 
-Noise(scale::Float64; point_count=256) = Texture(_Noise, zero(Color), scale, Texture(), Texture(), Perlin(point_count), noRGB())
+Noise(scale::Float64; point_count=256) = Texture(_Noise, zero(Color), scale, 0, 0, Perlin(point_count), noRGB())
 Noise(scale::Int64; point_count=256) = Noise(Float64(scale); point_count)
 
+TextureMap(filename) = Texture(_TextureMap, zero(Color), 0., 0, 0, Perlin(), load(filename))
 
-TextureMap(filename) = Texture(_TextureMap, zero(Color), 0., Texture(), Texture(), Perlin(), load(filename))
+function value(scene, tex::Int64, u, v, p)::Color
 
-function value(t::Texture, u, v, p)::Color
-    if t.type == _SolidColor
-        return t.color
+	texture = scene.textures[tex]
+
+    if texture.type == _SolidColor
+        return texture.color
     end
 
-    if t.type == _Checker
-        return sin(10p[1]) * sin(10p[2]) * sin(10p[3]) < 0 ? value(t.odd, u, v, p) : value(t.even, u, v, p)
+    if texture.type == _Checker
+        return sin(10p[1]) * sin(10p[2]) * sin(10p[3]) < 0 ? value(scene, texture.odd, u, v, p) : value(scene, texture.even, u, v, p)
     end
 
-    if t.type == _Noise
-        v = 1 + sin(t.scale*p[3] + 10*turb(t.noise, p))
+    if scene.textures[tex].type == _Noise
+        v = 1 + sin(texture.scale*p[3] + 10*turb(texture.noise, p))
         return Color(0.5v)
     end
 
-    if t.type == _TextureMap
-        h, w = size(t.rgb)
+    if texture.type == _TextureMap
+        h, w = size(texture.rgb)
         i = 1 + round(Int, clamp(u, 0, 1) * (w-1))
         j = 1 + round(Int, clamp(v, 0, 1) * (h-1))
-        return Color(t.rgb[j,i])
+        return Color(texture.rgb[j,i])
     end
 
     return zero(Color)
 end
+

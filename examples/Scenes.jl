@@ -7,11 +7,14 @@ rand_grey(low=0, high=1) = Color(randf(low, high))
 
 
 function random_scene(scene; filename="")
-    
-    checker = Checker(Color(0.2, 0.3, 0.1), Color(0.9))
+   
+ 	odd = add!(scene, SolidColor(Color(0.2, 0.3, 0.1)))
+	even = add!(scene, SolidColor(Color(0.9)))
+	checker = add!(scene, Checker(odd, even))
+ 
 
     hitables = Vector{Hitable}()
-    push!(hitables, Sphere(Point3(0,-1000,0), 1000, Lambertian(checker)))
+    push!(hitables, Sphere(Point3(0,-1000,0), 1000, add!(scene, Lambertian(checker))))
 
     for a in -11:10, b in -11:10
         choose_mat = rand()
@@ -20,24 +23,26 @@ function random_scene(scene; filename="")
             if choose_mat < 0.8
                 # // diffuse
                 center2 = center + Vec3(0, randf(0,.5), 0)
-                push!(hitables, MovingSphere(center, center2, 0.0, 1.0, 0.2, Lambertian()))
+		sc = add!(scene, SolidColor(Color()))
+                push!(hitables, MovingSphere(center, center2, 0.0, 1.0, 0.2, add!(scene, Lambertian(sc))))
             elseif choose_mat < 0.95
                 #  // metal
-                push!(hitables, Sphere(center, 0.2, Metal(Grey(randf(0.5, 1)), randf(0, 0.5))))
+                push!(hitables, Sphere(center, 0.2, add!(scene, Metal(Grey(randf(0.5, 1)), randf(0, 0.5)))))
             else
                 #    // glass
-                push!(hitables, Sphere(center, 0.2, Dielectric(1.5)))
+                push!(hitables, Sphere(center, 0.2, add!(scene, Dielectric(1.5))))
             end 
         end
     end
 
-    push!(hitables, Sphere(Point3(0, 1, 0), 1.0, Dielectric(1.5)))
-    push!(hitables, Sphere(Point3(-4, 1, 0), 1.0, Lambertian(Color(0.4, 0.2, 0.1))))
-    push!(hitables, Sphere(Point3(4, 1, 0), 1.0, Metal(Color(0.7, 0.6, 0.5), 0.0)))
+    sc = add!(scene, SolidColor(Color(0.4, 0.2, 0.1)))
+    push!(hitables, Sphere(Point3(0, 1, 0), 1.0, add!(scene, Dielectric(1.5))))
+    push!(hitables, Sphere(Point3(-4, 1, 0), 1.0, add!(scene, Lambertian(sc))))
+    push!(hitables, Sphere(Point3(4, 1, 0), 1.0, add!(scene, Metal(Color(0.7, 0.6, 0.5), 0.0))))
     add!(scene, BVH(hitables, 0.0, 1.0))
     scene
 end
-
+#==
 function two_spheres(scene; filename="")
     checker = Lambertian(Checker(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9)))
     add!(scene, Sphere(Point3(0,-10, 0), 10, checker))
@@ -171,10 +176,14 @@ function final_scene(scene; filename="earthmap.jpg")
     scene
 end
 
+==#
+
 defscene() = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Grey(0.5))
 
-function main(;width=1200, aspect=16/9, samples=10, depth=50, mapfilename="/home/matt/GitHub/ShirleyRenderer.jl/examples/earthmap.jpg", scenes=[random_scene, two_spheres, two_perlin_spheres, earth, simple_light, cornell_box, cornell_smoke, final_scene])
-	image_height = 
+function main(;width=1200, aspect=16/9, samples=10, depth=50, 
+	mapfilename="/home/matt/GitHub/ShirleyRenderer.jl/examples/earthmap.jpg", 
+	#scenes=[random_scene, two_spheres, two_perlin_spheres, earth, simple_light, cornell_box, cornell_smoke, final_scene])
+	scenes=[random_scene])
     for sc! in scenes
         println("sc $(sc!)")
         @time @pipe defscene() |> 
@@ -183,3 +192,5 @@ function main(;width=1200, aspect=16/9, samples=10, depth=50, mapfilename="/home
               ShirleyRayTracer.save("$(sc!).jpg", _)
     end
 end
+
+

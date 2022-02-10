@@ -5,9 +5,8 @@ using Debugger
 
 function setup()
     scene = Scene(Camera(Point3(13.,2.,3.), zero(Point3), Vec3(0,1,0), 20, 16/9, 0.1, 10.0), Color(0.5,0.5,0.5))
-    add!(scene, Sphere(Point3(0, 1, 0), 1.0, Dielectric(1.5)))
-    add!(scene, Sphere(Point3(-4, 1, 0), 1.0, Lambertian(Color(0.4,0.2,0.1))))
-    add!(scene, Sphere(Point3(4, 1, 0), 1.0, Metal(Color(0.7,0.6,0.5), 0.0)))
+	
+    add!(scene, Sphere(Point3(0, 1, 0), 1.0, add!(scene, Dielectric(1.5))))
     rec = ShirleyRayTracer.Hit()
     ray = ShirleyRayTracer.Ray()
 
@@ -20,8 +19,8 @@ function rc_warn()
 
     @code_warntype ShirleyRayTracer.reset_ray!(ray, scene, 0.5, 0.5)
     @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables, ray, 0.001, Inf)
-    @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables[3], ray, 0.001, Inf)
-    rec.material = scene.hitables[3].material
+    @code_warntype ShirleyRayTracer.trace!(rec, scene.hitables[1], ray, 0.001, Inf)
+    rec.material = scene.hitables[1].material
     @code_warntype ShirleyRayTracer.ray_color!(rec, ray, scene, 20)
     @code_warntype ShirleyRayTracer.emitted(rec.material, rec.u, rec.v, rec.p)
     @code_warntype ShirleyRayTracer.scatter!(rec.material, ray, rec)
@@ -37,13 +36,13 @@ function bp_code()
     
     scene, rec, ray = setup()
 
-    ShirleyRayTracer.reset_ray!(ray, scene, 0.5, 0.5)
-    ShirleyRayTracer.trace!(rec, scene.hitables, ray, 0.001, Inf)
-    ShirleyRayTracer.trace!(rec, scene.hitables[3], ray, 0.001, Inf)
-    rec.material = scene.hitables[3].material
+    ShirleyRayTracer.reset_ray!(scene, ray, 0.5, 0.5)
+    ShirleyRayTracer.trace!(scene.hitables, ray, rec, 0.001, Inf)
+    ShirleyRayTracer.trace!(scene.hitables[1], ray, rec, 0.001, Inf)
+    rec.material = scene.hitables[1].material
     @bp
-    ShirleyRayTracer.ray_color!(rec, ray, scene, 20)
-    ShirleyRayTracer.emitted(rec.material, rec.u, rec.v, rec.p)
-    ShirleyRayTracer.scatter!(rec.material, ray, rec)
+    ShirleyRayTracer.ray_color!(scene, ray, rec, 20)
+    ShirleyRayTracer.emitted(scene, rec, rec.u, rec.v, rec.p)
+    ShirleyRayTracer.scatter!(scene, ray, rec)
 
 end

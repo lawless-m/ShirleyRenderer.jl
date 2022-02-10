@@ -7,11 +7,11 @@ mutable struct Hit
 	front_face::Bool
 	u::Float64
 	v::Float64
-	material::Material
+	material::Int64
 	Hit() = new(zero(Point3), zero(Vec3), 0, true, 0, 0)
 end
 
-trace!(rec::Hit, h::Hitable, ray::Ray, t_min::Float64, t_max::Float64)::Bool = false
+trace!(h::Hitable, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool = false
 
 function set_face_normal!(rec::Hit, ray::Ray, outward_normal::Vec3)
 	rec.front_face = dot(ray.direction, outward_normal) < 0
@@ -21,7 +21,7 @@ end
 struct Sphere <: Hitable
 	center::Point3
 	radius::Float64
-	material::Material
+	material::Int64
 end
 
 function trace_root(oc, ray, radius, t_min, t_max)::Float64
@@ -45,7 +45,7 @@ function trace_root(oc, ray, radius, t_min, t_max)::Float64
 	root
 end
 
-function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(sphere::Sphere, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	oc = ray.origin - sphere.center
 	root = trace_root(oc, ray, sphere.radius, t_min, t_max)
 	if root < 0 return false end
@@ -65,7 +65,7 @@ struct MovingSphere <: Hitable
 	time0::Float64
 	time1::Float64
 	radius::Float64
-	material::Material
+	material::Int64
 end
 
 center(ms::MovingSphere, time) = ms.center0 + ((time - ms.time0) / (ms.time1 - ms.time0))*(ms.center1 - ms.center0)
@@ -78,7 +78,7 @@ function bounding_box(m::MovingSphere, time0, time1)
 	true, surrounding_box([aabb(m.time0), aabb(m.time1)])
 end
 
-function trace!(rec::Hit, ms::MovingSphere, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(ms::MovingSphere, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	oc = ray.origin - center(ms, ray.time)
 	root = trace_root(oc, ray, ms.radius, t_min, t_max)
 	if root < 0 return false end
@@ -127,13 +127,13 @@ bounding_box(bvh::BVH, time0, time1) = true, bvh.box
 
 bounding_box(hs::Vector{Hitable}, time0, time1) = true, surrounding_box(map(h->bounding_box(h, time0, time1)[2], hs))
 
-function trace!(rec::Hit, bvh::BVH, ray::Ray, t_min::Float64, t_max::Float64)::Bool
-	if !trace!(rec, bvh.box, ray, t_min, t_max)
+function trace!(bvh::BVH, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
+	if !trace!(bvh.box, ray, rec, t_min, t_max)
 		return false
 	end
 
-	hit_left = trace!(rec, bvh.left, ray, t_min, t_max)
-	hit_right = trace!(rec, bvh.right, ray, t_min, hit_left ? rec.t : t_max)
+	hit_left = trace!(bvh.left, ray, rec, t_min, t_max)
+	hit_right = trace!(bvh.right, ray, rec, t_min, hit_left ? rec.t : t_max)
 
 	hit_left || hit_right
 end
@@ -149,7 +149,7 @@ end
 
 bounding_box(r::XYRect, time0, time1) = true, AaBb(Point3(r.x0, r.y0, r.k-0.0001), Point3(r.x1, r.y1, r.k+0.001))
 
-function trace!(rec::Hit, xyr::XYRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(xyr::XYRect, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	t = (xyr.k - ray.origin[2]) / ray.direction[2]
 	if t < t_min || t > t_max
 		return false
@@ -182,7 +182,7 @@ end
 
 bounding_box(r::XZRect, time0, time1) = true, AaBb(Point3(r.x0, r.k-0.0001, r.z0), Point3(r.x1, r.k+0.0001, r.z1))
 
-function trace!(rec::Hit, xzr::XZRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(xzr::XZRect, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	t = (xzr.k - ray.origin[2]) / ray.direction[2]
 	if t < t_min || t > t_max
 		return false
@@ -215,7 +215,7 @@ end
 
 bounding_box(r::YZRect, time0, time1) = true, AaBb(Point3(r.k-0.0001, r.y0, r.z0), Point3(r.k+0.0001, r.y1, r.z1))
 
-function trace!(rec::Hit, yzr::YZRect, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(yzr::YZRect, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	t = (yzr.k - ray.origin[1]) / ray.direction[1]
 	if t < t_min || t > t_max
 		return false
@@ -256,7 +256,7 @@ struct Box <: Hitable
 	end
 end
 
-trace!(rec::Hit, b::Box, ray::Ray, t_min::Float64, t_max::Float64)::Bool = trace!(rec::Hit, b.sides, ray, t_min, t_max)
+trace!(b::Box, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool = trace!(rec::Hit, b.sides, ray, t_min, t_max)
 
 bounding_box(b::Box, time0, time1) = true, AaBb(b.box_min, b.box_max)
 
@@ -295,7 +295,7 @@ end
 
 bounding_box(r::RotateY, time0, time1) = r.hasbox, r.bbox
 
-function trace!(rec::Hit, roty::RotateY, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(roty::RotateY, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	c,s = roty.cos_theta, roty.sin_theta
 	rot(pv, T)   = T(c * pv[1] - s * pv[3], pv[2],  s * pv[1] + c * pv[3])
 	unrot(pv, T) = T(c * pv[1] + s * pv[3], pv[2], -s * pv[1] + c * pv[3])
@@ -303,7 +303,7 @@ function trace!(rec::Hit, roty::RotateY, ray::Ray, t_min::Float64, t_max::Float6
 	o = ray.origin
 	d = ray.direction
 	set_ray!(ray, rot(ray.origin, Point3), rot(ray.direction, Vec3), ray.time)
-	if !trace!(rec, roty.hitable, ray, t_min, t_max)
+	if !trace!(roty.hitable, ray, rec, t_min, t_max)
 		set_ray!(ray, o, d, ray.time)
 		return false
 	end
@@ -319,10 +319,10 @@ struct Translate <: Hitable
 	offset
 end
 
-function trace!(rec::Hit, t::Translate, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(t::Translate, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	o = ray.origin
 	set_ray!(ray, ray.origin - t.offset, ray.direction, ray.time)
-	if !trace!(rec, t.hitable, ray, t_min, t_max)
+	if !trace!(t.hitable, ray, rec, t_min, t_max)
 		set_ray!(ray, o, ray.direction, ray.time)
 		return false
 	end
@@ -345,21 +345,21 @@ end
 
 struct ConstantMedium <: Hitable
 	boundary::Hitable
-	phase_function::Material
+	phase_function::Int64
 	neg_inv_density::Float64
 	ConstantMedium(b, d, material) = new(b, material, -1/d)
 end
 
 bounding_box(cm::ConstantMedium, time0, time1) = bounding_box(cm.boundary)
 
-function trace!(rec::Hit, cm::ConstantMedium, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(cm::ConstantMedium, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::Bool
 	rec1 = Hit()
-	if !trace!(rec1, cm.boundary, ray, -Inf, Inf)
+	if !trace!(cm.boundary, ray, rec1, -Inf, Inf)
 		return false
 	end
 
 	rec2 = Hit()
-	if !trace!(rec2, cm.boundary, ray, rec1.t+0.0001, Inf)
+	if !trace!(cm.boundary, ray, rec2, rec1.t+0.0001, Inf)
 		return false
 	end
 
@@ -385,3 +385,5 @@ function trace!(rec::Hit, cm::ConstantMedium, ray::Ray, t_min::Float64, t_max::F
 
 	true
 end
+
+
