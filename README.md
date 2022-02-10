@@ -15,12 +15,12 @@ $> julia -q --project=. -t 1
 julia> include("examples/RandomScene.jl")
 
 julia> @time main()
- 64.417148 seconds (8.88 M allocations: 343.991 MiB, 0.30% gc time, 2.65% compilation time)
-
+ 64.341958 seconds (3.65 M allocations: 84.564 MiB, 0.07% gc time, 0.35% compilation time)
+ 
 julia> @benchmark main()
 BenchmarkTools.Trial: 1 sample with 1 evaluation.
- Single result which took 59.794 s (0.03% GC) to evaluate,
- with a memory estimate of 82.07 MiB, over 4057748 allocations.
+ Single result which took 62.764 s (0.02% GC) to evaluate,
+ with a memory estimate of 61.97 MiB, over 3247747 allocations.
 
 ```
 
@@ -31,18 +31,18 @@ $> julia -q --project=. -t 40
 julia> include("examples/RandomScene.jl")
 
 julia> @time main()
-  6.066820 seconds (8.88 M allocations: 344.228 MiB, 6.22% gc time, 35.41% compilation time)
+  5.616959 seconds (7.60 M allocations: 296.944 MiB, 1.99% gc time, 31.26% compilation time)
 
 julia> @benchmark main()
 BenchmarkTools.Trial: 2 samples with 1 evaluation.
- Range (min … max):  3.736 s …   3.763 s  ┊ GC (min … max): 0.00% … 0.00%
- Time  (median):     3.750 s              ┊ GC (median):    0.00%
- Time  (mean ± σ):   3.750 s ± 19.139 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
+ Range (min … max):  3.586 s …    3.730 s  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     3.658 s               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   3.658 s ± 102.103 ms  ┊ GC (mean ± σ):  0.00% ± 0.00%
 
-  █                                                       █  
-  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
-  3.74 s         Histogram: frequency by time        3.76 s <
+  █                                                        █  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  3.59 s         Histogram: frequency by time         3.73 s <
 
- Memory estimate: 82.09 MiB, allocs estimate: 4057949.
+ Memory estimate: 61.99 MiB, allocs estimate: 3247946.
 
 ```
