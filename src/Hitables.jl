@@ -132,8 +132,8 @@ function trace!(bvh::BVH, ray::Ray, rec::Hit, t_min::Float64, t_max::Float64)::B
 		return false
 	end
 
-	hit_left = trace!(bvh.left, ray, rec, t_min, t_max)
-	hit_right = trace!(bvh.right, ray, rec, t_min, hit_left ? rec.t : t_max)
+	hit_left::Bool = trace!(bvh.left, ray, rec, t_min, t_max)
+	hit_right::Bool = trace!(bvh.right, ray, rec, t_min, hit_left ? rec.t : t_max)
 
 	hit_left || hit_right
 end
