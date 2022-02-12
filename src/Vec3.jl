@@ -55,3 +55,28 @@ near_zero(v) = v[1] < 1e-8 && v[2] < 1e-8 && v[3] < 1e-8
 randf(fmin, fmax) = fmin + (fmax-fmin)*rand()
 randv() = Vec3(rand(), rand(), rand())
 randv(l, h) = Vec3(randf(l,h), randf(l,h), randf(l,h))
+
+function random_in_unit_disk()
+        x,y = randf(-1, 1), randf(-1, 1)
+        while magnitude²(x,y) >= 1
+                x,y = randf(-1, 1), randf(-1, 1)
+        end
+        x,y
+end
+
+function random_in_unit_sphere()
+        v = randv(-1,1)
+        while magnitude²(v) >= 1
+                v = randv(-1,1)
+        end
+        v
+end
+
+random_unit_vector() = unit(random_in_unit_sphere())
+
+function random_in_hemisphere(normal)
+    in_unit_sphere = random_in_unit_sphere()
+    dot(in_unit_sphere, normal) > 0.0 ? in_unit_sphere : -in_unit_sphere
+end
+
+

@@ -14,7 +14,7 @@ function set_face_normal!(h::Hit, ray, outward_normal)
 	h.normal = h.front_face ? outward_normal : -outward_normal
 end
 
-trace!(rec::Hit, h::Hitable, ray::Ray, t_min::Float64)::Bool = false
+trace!(hitable::Hitable, ray, rec, t_min, t_max) = false
 
 struct Sphere <: Hitable
 	center::Point3
@@ -24,7 +24,7 @@ end
 
 export Sphere, Hit
 
-function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float64)::Bool
+function trace!(sphere::Sphere, ray, rec, t_min, t_max)
 	oc = ray.origin - sphere.center
 	a = magnitude²(ray.direction)
 	half_b = dot(oc, ray.direction)
@@ -49,3 +49,5 @@ function trace!(rec::Hit, sphere::Sphere, ray::Ray, t_min::Float64, t_max::Float
 	rec.material = sphere.material
 	true
 end
+
+
